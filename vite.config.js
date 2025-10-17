@@ -17,7 +17,7 @@ if (
 
 // FIX: Ensure SHOPIFY_APP_URL has a protocol
 let appUrl = process.env.SHOPIFY_APP_URL || "http://localhost";
-if (!appUrl.startsWith('http://') && !appUrl.startsWith('https://')) {
+if (appUrl && !appUrl.startsWith('http://') && !appUrl.startsWith('https://')) {
   appUrl = 'https://' + appUrl;
 }
 
