@@ -1,4 +1,4 @@
-import { useLoaderData, json } from "react-router";
+import { useLoaderData } from "react-router";
 import {
   Page,
   Layout,
@@ -20,10 +20,10 @@ export const loader = async ({ request }) => {
     plan: "Free"
   };
   
-  return json({
+  return {
     shop: session.shop,
     stats: stats
-  });
+  };
 };
 
 // Main Component
