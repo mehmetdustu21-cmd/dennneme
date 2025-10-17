@@ -7,7 +7,7 @@ import {
   BlockStack,
   InlineStack,
   Button,
-  Divider,
+  Box,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -83,7 +83,9 @@ export default function Dashboard() {
                   </div>
                 </InlineStack>
 
-                <Divider />
+                <Box paddingBlockStart="300" paddingBlockEnd="300">
+                  <div style={{height: '1px', background: '#e0e0e0'}} />
+                </Box>
 
                 {/* Credits & Billing */}
                 <Layout>
