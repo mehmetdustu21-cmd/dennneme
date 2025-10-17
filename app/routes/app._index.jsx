@@ -7,229 +7,304 @@ import {
   BlockStack,
   InlineStack,
   Button,
-  Box,
+  Divider,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
-// Loader
 export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
   
-  // Simüle edilmiş veriler (gerçekte database'den gelecek)
   const stats = {
     totalGenerations: 11,
     thisMonth: 7,
     creditsRemaining: 18,
     creditsTotal: 25,
     plan: "Free Plan",
-    billingCycle: "Nov 16, 2025",
-    cacheHitRate: 36.4,
+    billingDate: "16 Kasım 2025",
+    cacheHitRate: "36.4%",
     cached: 4,
     uncached: 7,
-    themeExtensionActive: true,
+    themeActive: true,
     modelsCount: 10,
-    lastSevenDays: [
-      { date: "Oct 10", cached: 0, uncached: 0 },
-      { date: "Oct 11", cached: 0, uncached: 0 },
-      { date: "Oct 12", cached: 1, uncached: 0 },
-      { date: "Oct 13", cached: 0, uncached: 1 },
-      { date: "Oct 14", cached: 1, uncached: 2 },
-      { date: "Oct 15", cached: 0, uncached: 0 },
-      { date: "Oct 16", cached: 2, uncached: 2 },
-      { date: "Oct 17", cached: 0, uncached: 2 },
+    // Son 7 günlük veri
+    weeklyData: [
+      { day: "10 Eki", value: 0 },
+      { day: "11 Eki", value: 0 },
+      { day: "12 Eki", value: 1 },
+      { day: "13 Eki", value: 1 },
+      { day: "14 Eki", value: 3 },
+      { day: "15 Eki", value: 0 },
+      { day: "16 Eki", value: 4 },
+      { day: "17 Eki", value: 2 },
     ]
   };
   
-  return {
-    shop: session.shop,
-    stats: stats
-  };
+  return { shop: session.shop, stats };
 };
 
-// Main Component
-export default function Index() {
-  const { shop, stats } = useLoaderData();
+export default function Dashboard() {
+  const { stats } = useLoaderData();
+  
+  // Kredi yüzdesi
+  const creditPercent = Math.round((stats.creditsRemaining / stats.creditsTotal) * 100);
   
   return (
     <Page>
-      <TitleBar title="Virtual Try-On Dashboard" />
+      <TitleBar title="Virtual Try-On" />
       
       <BlockStack gap="500">
         
-        {/* Subscription Status */}
+        {/* SUBSCRIPTION STATUS */}
         <Layout>
           <Layout.Section>
             <Card>
               <BlockStack gap="400">
-                <InlineStack align="space-between">
-                  <BlockStack gap="200">
-                    <Text as="h2" variant="headingMd">
+                
+                {/* Header */}
+                <InlineStack align="space-between" blockAlign="center">
+                  <BlockStack gap="100">
+                    <Text as="h2" variant="headingMd" fontWeight="bold">
                       Abonelik Durumu
                     </Text>
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      Mevcut planınız ve kullanım
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      Mevcut planınız ve kullanım bilgileri
                     </Text>
                   </BlockStack>
-                  <Text as="span" variant="bodyMd" fontWeight="bold" tone="info">
-                    {stats.plan}
-                  </Text>
+                  <div style={{
+                    background: '#e3f2fd',
+                    padding: '4px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #90caf9'
+                  }}>
+                    <Text as="span" variant="bodySm" fontWeight="semibold">
+                      {stats.plan}
+                    </Text>
+                  </div>
                 </InlineStack>
 
-                <Box paddingBlockStart="200">
-                  <InlineStack gap="800">
-                    <BlockStack gap="200">
+                <Divider />
+
+                {/* Credits & Billing */}
+                <Layout>
+                  <Layout.Section variant="oneHalf">
+                    <BlockStack gap="300">
                       <Text as="p" variant="bodyMd" tone="subdued">
                         Kalan Kredi
                       </Text>
-                      <Box style={{background: '#e3f5e1', padding: '4px 8px', borderRadius: '4px', display: 'inline-block'}}>
-                        <Text as="span" variant="bodySm" fontWeight="bold">
-                          ✓ {stats.creditsRemaining}/{stats.creditsTotal} Kredi
-                        </Text>
-                      </Box>
+                      <Text as="h3" variant="headingXl" fontWeight="bold">
+                        {stats.creditsRemaining} / {stats.creditsTotal}
+                      </Text>
+                      
+                      {/* Progress Bar */}
+                      <div style={{
+                        width: '100%',
+                        height: '8px',
+                        background: '#f0f0f0',
+                        borderRadius: '4px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          width: `${creditPercent}%`,
+                          height: '100%',
+                          background: creditPercent > 50 ? '#4caf50' : creditPercent > 20 ? '#ff9800' : '#f44336',
+                          transition: 'width 0.3s ease'
+                        }} />
+                      </div>
                     </BlockStack>
+                  </Layout.Section>
 
-                    <BlockStack gap="200">
+                  <Layout.Section variant="oneHalf">
+                    <BlockStack gap="300">
                       <Text as="p" variant="bodyMd" tone="subdued">
                         Faturalandırma Döngüsü
                       </Text>
-                      <Text as="h3" variant="headingMd">
-                        {stats.billingCycle}
+                      <Text as="h3" variant="headingMd" fontWeight="semibold">
+                        Bitiş: {stats.billingDate}
                       </Text>
                     </BlockStack>
-                  </InlineStack>
-                </Box>
+                  </Layout.Section>
+                </Layout>
 
-                <Box paddingBlockStart="200">
+                <Divider />
+
+                {/* Footer */}
+                <BlockStack gap="200">
                   <Text as="p" variant="bodySm" tone="subdued">
-                    Ücretsiz plan "Powered by" markası içerir.
+                    ℹ️ Ücretsiz plan "Powered by Virtual Try-On" markası içerir.
                   </Text>
-                </Box>
+                  <Button size="large">Planları Görüntüle</Button>
+                </BlockStack>
 
-                <Button>Planları Görüntüle</Button>
               </BlockStack>
             </Card>
           </Layout.Section>
         </Layout>
 
-        {/* Usage Analytics */}
+        {/* USAGE ANALYTICS */}
         <Layout>
           <Layout.Section>
             <Card>
               <BlockStack gap="400">
-                <InlineStack align="space-between">
-                  <Text as="h2" variant="headingMd">
+                
+                {/* Header */}
+                <InlineStack align="space-between" blockAlign="center">
+                  <Text as="h2" variant="headingMd" fontWeight="bold">
                     Kullanım Analitikleri (Son 7 Gün)
                   </Text>
-                  <Button variant="plain">Detayları Görüntüle</Button>
+                  <Button variant="plain" tone="critical">
+                    Detayları Görüntüle →
+                  </Button>
                 </InlineStack>
 
-                <InlineStack gap="800">
-                  <BlockStack gap="100">
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      Toplam Üretim
-                    </Text>
-                    <Text as="h3" variant="heading2xl">
-                      {stats.totalGenerations}
-                    </Text>
-                  </BlockStack>
+                {/* Stats Grid */}
+                <Layout>
+                  <Layout.Section variant="oneQuarter">
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" tone="subdued">Toplam Üretim</Text>
+                      <Text variant="heading2xl" fontWeight="bold">{stats.totalGenerations}</Text>
+                    </BlockStack>
+                  </Layout.Section>
 
-                  <BlockStack gap="100">
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      Cache Hit Rate
-                    </Text>
-                    <Text as="h3" variant="heading2xl">
-                      {stats.cacheHitRate}%
-                    </Text>
-                  </BlockStack>
+                  <Layout.Section variant="oneQuarter">
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" tone="subdued">Cache Hit Rate</Text>
+                      <Text variant="heading2xl" fontWeight="bold">{stats.cacheHitRate}</Text>
+                    </BlockStack>
+                  </Layout.Section>
 
-                  <BlockStack gap="100">
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      Önbellekli
-                    </Text>
-                    <Text as="h3" variant="heading2xl">
-                      {stats.cached}
-                    </Text>
-                  </BlockStack>
+                  <Layout.Section variant="oneQuarter">
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" tone="subdued">Önbellekli</Text>
+                      <Text variant="heading2xl" fontWeight="bold">{stats.cached}</Text>
+                    </BlockStack>
+                  </Layout.Section>
 
-                  <BlockStack gap="100">
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      Önbelleksiz
-                    </Text>
-                    <Text as="h3" variant="heading2xl">
-                      {stats.uncached}
-                    </Text>
-                  </BlockStack>
-                </InlineStack>
+                  <Layout.Section variant="oneQuarter">
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" tone="subdued">Önbelleksiz</Text>
+                      <Text variant="heading2xl" fontWeight="bold">{stats.uncached}</Text>
+                    </BlockStack>
+                  </Layout.Section>
+                </Layout>
 
-                <Box paddingBlockStart="400">
-                  <Text as="p" variant="bodySm" tone="subdued">
-                    📊 Grafik görünümü için Recharts kütüphanesi eklenecek
-                  </Text>
-                </Box>
+                <Divider />
+
+                {/* Simple Chart */}
+                <BlockStack gap="200">
+                  <Text variant="bodyMd" tone="subdued">Haftalık Aktivite</Text>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '120px' }}>
+                    {stats.weeklyData.map((item, i) => (
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                        <div style={{
+                          width: '100%',
+                          height: `${item.value * 20}%`,
+                          minHeight: item.value > 0 ? '8px' : '2px',
+                          background: item.value > 0 ? '#5c6ac4' : '#e0e0e0',
+                          borderRadius: '4px 4px 0 0',
+                          transition: 'height 0.3s ease'
+                        }} />
+                        <Text variant="bodySm" tone="subdued">{item.day}</Text>
+                      </div>
+                    ))}
+                  </div>
+                </BlockStack>
+
               </BlockStack>
             </Card>
           </Layout.Section>
         </Layout>
 
-        {/* Quick Actions */}
+        {/* QUICK ACTIONS */}
         <Layout>
+          
+          {/* Theme Extension */}
           <Layout.Section variant="oneThird">
             <Card>
               <BlockStack gap="300">
-                <InlineStack align="space-between">
-                  <Text as="h3" variant="headingMd">
-                    Tema Eklentisi
+                <InlineStack align="space-between" blockAlign="center">
+                  <Text as="h3" variant="headingMd" fontWeight="semibold">
+                    🎨 Tema Eklentisi
                   </Text>
-                  <Text as="span" variant="bodyMd" fontWeight="bold" tone="success">
-                    Aktif
-                  </Text>
+                  <div style={{
+                    background: '#e8f5e9',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid #81c784'
+                  }}>
+                    <Text as="span" variant="bodySm" fontWeight="semibold">
+                      ✓ Aktif
+                    </Text>
+                  </div>
                 </InlineStack>
-                <Text as="p" variant="bodyMd" tone="subdued">
+
+                <Text as="p" variant="bodySm" tone="subdued">
                   Virtual Try-On bölümü şu anda ürün şablonuna eklendi.
                 </Text>
-                <Button>Yönet</Button>
+
+                <Button fullWidth>Yönet</Button>
               </BlockStack>
             </Card>
           </Layout.Section>
 
+          {/* Models */}
           <Layout.Section variant="oneThird">
             <Card>
               <BlockStack gap="300">
-                <InlineStack align="space-between">
-                  <Text as="h3" variant="headingMd">
-                    Modeller
+                <InlineStack align="space-between" blockAlign="center">
+                  <Text as="h3" variant="headingMd" fontWeight="semibold">
+                    👤 Modeller
                   </Text>
-                  <Text as="span" variant="bodyMd" fontWeight="bold" tone="success">
-                    {stats.modelsCount} aktif
-                  </Text>
+                  <div style={{
+                    background: '#e8f5e9',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid #81c784'
+                  }}>
+                    <Text as="span" variant="bodySm" fontWeight="semibold">
+                      {stats.modelsCount} aktif
+                    </Text>
+                  </div>
                 </InlineStack>
-                <Text as="p" variant="bodyMd" tone="subdued">
+
+                <Text as="p" variant="bodySm" tone="subdued">
                   Varsayılan ve özel model görsellerini yönetin.
                 </Text>
-                <Button>Yönet</Button>
+
+                <Button fullWidth>Yönet</Button>
               </BlockStack>
             </Card>
           </Layout.Section>
 
+          {/* Settings */}
           <Layout.Section variant="oneThird">
             <Card>
               <BlockStack gap="300">
-                <InlineStack align="space-between">
-                  <Text as="h3" variant="headingMd">
-                    Ayarlar
+                <InlineStack align="space-between" blockAlign="center">
+                  <Text as="h3" variant="headingMd" fontWeight="semibold">
+                    ⚙️ Ayarlar
                   </Text>
-                  <Text as="span" variant="bodyMd" fontWeight="bold" tone="info">
-                    Yapılandırıldı
-                  </Text>
+                  <div style={{
+                    background: '#e3f2fd',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid #90caf9'
+                  }}>
+                    <Text as="span" variant="bodySm" fontWeight="semibold">
+                      Yapılandırıldı
+                    </Text>
+                  </div>
                 </InlineStack>
-                <Text as="p" variant="bodyMd" tone="subdued">
+
+                <Text as="p" variant="bodySm" tone="subdued">
                   Önbelleğe alma ve uygulama tercihlerini yönetin.
                 </Text>
-                <Button>Yönet</Button>
+
+                <Button fullWidth>Yönet</Button>
               </BlockStack>
             </Card>
           </Layout.Section>
+
         </Layout>
 
       </BlockStack>
