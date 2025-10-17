@@ -1,19 +1,11 @@
-import { ... } from "react-router";
+import { useLoaderData } from "react-router";
 import { json } from "@remix-run/node";
-import { useActionData, useLoaderData, useSubmit } from "@remix-run/react";
 import {
   Page,
   Layout,
   Text,
   Card,
-  Button,
   BlockStack,
-  Box,
-  List,
-  Link,
-  InlineStack,
-  Banner,
-  Badge,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -38,7 +30,7 @@ export const loader = async ({ request }) => {
 // Main Component
 export default function Index() {
   const { shop, stats } = useLoaderData();
-
+  
   return (
     <Page>
       <TitleBar title="Virtual Try-On Dashboard" />
