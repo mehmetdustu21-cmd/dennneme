@@ -7,8 +7,6 @@ import {
   BlockStack,
   InlineStack,
   Button,
-  Badge,
-  ProgressBar,
   Box,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
@@ -73,7 +71,9 @@ export default function Index() {
                       Mevcut planınız ve kullanım
                     </Text>
                   </BlockStack>
-                  <Badge tone="info">{stats.plan}</Badge>
+                  <Text as="span" variant="bodyMd" fontWeight="bold" tone="info">
+                    {stats.plan}
+                  </Text>
                 </InlineStack>
 
                 <Box paddingBlockStart="200">
@@ -82,14 +82,10 @@ export default function Index() {
                       <Text as="p" variant="bodyMd" tone="subdued">
                         Kalan Kredi
                       </Text>
-                      <Text as="h3" variant="headingLg">
-                        {stats.creditsRemaining} / {stats.creditsTotal}
-                      </Text>
-                      <Box paddingBlockStart="100">
-                        <ProgressBar 
-                          progress={(stats.creditsRemaining / stats.creditsTotal) * 100} 
-                          size="small"
-                        />
+                      <Box style={{background: '#e3f5e1', padding: '4px 8px', borderRadius: '4px', display: 'inline-block'}}>
+                        <Text as="span" variant="bodySm" fontWeight="bold">
+                          ✓ {stats.creditsRemaining}/{stats.creditsTotal} Kredi
+                        </Text>
                       </Box>
                     </BlockStack>
 
@@ -185,7 +181,9 @@ export default function Index() {
                   <Text as="h3" variant="headingMd">
                     Tema Eklentisi
                   </Text>
-                  <Badge tone="success">Aktif</Badge>
+                  <Text as="span" variant="bodyMd" fontWeight="bold" tone="success">
+                    Aktif
+                  </Text>
                 </InlineStack>
                 <Text as="p" variant="bodyMd" tone="subdued">
                   Virtual Try-On bölümü şu anda ürün şablonuna eklendi.
@@ -202,7 +200,9 @@ export default function Index() {
                   <Text as="h3" variant="headingMd">
                     Modeller
                   </Text>
-                  <Badge tone="success">{stats.modelsCount} aktif</Badge>
+                  <Text as="span" variant="bodyMd" fontWeight="bold" tone="success">
+                    {stats.modelsCount} aktif
+                  </Text>
                 </InlineStack>
                 <Text as="p" variant="bodyMd" tone="subdued">
                   Varsayılan ve özel model görsellerini yönetin.
@@ -219,7 +219,9 @@ export default function Index() {
                   <Text as="h3" variant="headingMd">
                     Ayarlar
                   </Text>
-                  <Badge tone="info">Yapılandırıldı</Badge>
+                  <Text as="span" variant="bodyMd" fontWeight="bold" tone="info">
+                    Yapılandırıldı
+                  </Text>
                 </InlineStack>
                 <Text as="p" variant="bodyMd" tone="subdued">
                   Önbelleğe alma ve uygulama tercihlerini yönetin.
