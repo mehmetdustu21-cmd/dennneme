@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useFetcher, useNavigate } from "react-router";
-import { json } from "react-router";
+return { outfits };
 import {
   Page,
   Layout,

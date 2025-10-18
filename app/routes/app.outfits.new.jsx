@@ -1,4 +1,4 @@
-import { json } from "react-router";
+return { outfits };
 import { useLoaderData, useNavigate } from "react-router";
 import {
   Page,
