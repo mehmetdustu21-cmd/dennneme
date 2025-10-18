@@ -1,5 +1,5 @@
-import { json } from "@remix-run/node";
-import { useLoaderData, useNavigate } from "@remix-run/react";
+import { json } from "@react-router/node";
+import { useLoaderData, useNavigate } from "react-router";
 import {
   Page,
   Layout,
