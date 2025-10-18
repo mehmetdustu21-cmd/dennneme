@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { useFetcher, useNavigate } from "@remix-run/react";
-import { json } from "@remix-run/node";
+import { useFetcher, useNavigate } from "react-router";
+import { json } from "@react-router/node";
 import {
   Page,
   Layout,
