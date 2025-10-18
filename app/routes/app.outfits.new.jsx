@@ -6,7 +6,6 @@ import {
   Card,
   Button,
   TextField,
-  ResourcePicker,
   Banner,
   ResourceList,
   ResourceItem,
@@ -14,13 +13,52 @@ import {
   Text,
   BlockStack,
   InlineStack,
+  Checkbox,
+  Spinner,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 
 export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
-  return { shop: session.shop };
+  
+  // Shopify'dan ilk 50 ürünü çek
+  const response = await admin.graphql(
+    `#graphql
+    query getProducts {
+      products(first: 50) {
+        edges {
+          node {
+            id
+            title
+            featuredImage {
+              url
+            }
+            variants(first: 1) {
+              edges {
+                node {
+                  price
+                }
+              }
+            }
+            productType
+          }
+        }
+      }
+    }`
+  );
+
+  const result = await response.json();
+  const products = result.data.products.edges.map(edge => ({
+    id: edge.node.id.split("/").pop(),
+    fullId: edge.node.id,
+    title: edge.node.title,
+    image: edge.node.featuredImage?.url || "",
+    price: edge.node.variants.edges[0]?.node.price || "0",
+    category: edge.node.productType || "Genel"
+  }));
+
+  return { shop: session.shop, products };
 };
 
 export const action = async ({ request }) => {
@@ -63,24 +101,28 @@ export const action = async ({ request }) => {
 
 export default function NewOutfit() {
   const actionData = useActionData();
-  const { shop } = useLoaderData();
+  const { shop, products } = useLoaderData();
   const submit = useSubmit();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const handleProductSelection = useCallback((selection) => {
-    const products = selection.map((product) => ({
-      id: product.id.split("/").pop(),
-      title: product.title,
-      image: product.images[0]?.originalSrc || "",
-      price: product.variants[0]?.price || "0",
-      category: product.productType || "Genel",
-    }));
-    setSelectedProducts(products);
-    setIsPickerOpen(false);
+  // Arama filtresi
+  const filteredProducts = products.filter(product =>
+    product.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const toggleProduct = useCallback((product) => {
+    setSelectedProducts(prev => {
+      const exists = prev.find(p => p.id === product.id);
+      if (exists) {
+        return prev.filter(p => p.id !== product.id);
+      } else {
+        return [...prev, product];
+      }
+    });
   }, []);
 
   const handleSubmit = useCallback(() => {
@@ -144,18 +186,13 @@ export default function NewOutfit() {
         <Layout.Section>
           <Card>
             <BlockStack gap="400">
-              <InlineStack align="space-between">
-                <Text variant="headingMd" as="h2">
-                  Kombindeki Ürünler ({selectedProducts.length})
-                </Text>
-                <Button onClick={() => setIsPickerOpen(true)}>
-                  Ürün Seç
-                </Button>
-              </InlineStack>
+              <Text variant="headingMd" as="h2">
+                Seçilen Ürünler ({selectedProducts.length})
+              </Text>
 
               {selectedProducts.length === 0 ? (
                 <Banner>
-                  Kombine eklemek için ürün seçin. En az 1 ürün gerekli.
+                  Aşağıdan kombine eklemek için ürün seçin.
                 </Banner>
               ) : (
                 <ResourceList
@@ -172,7 +209,6 @@ export default function NewOutfit() {
                             alt={title}
                           />
                         }
-                        accessibilityLabel={`${title} ürününü görüntüle`}
                       >
                         <InlineStack align="space-between">
                           <BlockStack gap="100">
@@ -180,7 +216,7 @@ export default function NewOutfit() {
                               {title}
                             </Text>
                             <Text variant="bodySm" tone="subdued">
-                              Fiyat: {price} TL
+                              {price} TL
                             </Text>
                           </BlockStack>
                           <Button
@@ -198,15 +234,68 @@ export default function NewOutfit() {
             </BlockStack>
           </Card>
         </Layout.Section>
-      </Layout>
 
-      <ResourcePicker
-        resourceType="Product"
-        open={isPickerOpen}
-        onCancel={() => setIsPickerOpen(false)}
-        onSelection={handleProductSelection}
-        showVariants={false}
-      />
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <Text variant="headingMd" as="h2">
+                Mağazadaki Ürünler
+              </Text>
+
+              <TextField
+                label="Ürün Ara"
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Ürün adı yazın..."
+                autoComplete="off"
+                clearButton
+                onClearButtonClick={() => setSearchQuery("")}
+              />
+
+              {filteredProducts.length === 0 ? (
+                <Banner>Ürün bulunamadı.</Banner>
+              ) : (
+                <ResourceList
+                  resourceName={{ singular: "ürün", plural: "ürünler" }}
+                  items={filteredProducts}
+                  renderItem={(product) => {
+                    const { id, title, image, price } = product;
+                    const isSelected = selectedProducts.some(p => p.id === id);
+                    
+                    return (
+                      <ResourceItem
+                        id={id}
+                        media={
+                          <Thumbnail
+                            source={image || "https://via.placeholder.com/50"}
+                            alt={title}
+                          />
+                        }
+                        onClick={() => toggleProduct(product)}
+                      >
+                        <InlineStack align="space-between">
+                          <BlockStack gap="100">
+                            <Text variant="bodyMd" fontWeight="bold">
+                              {title}
+                            </Text>
+                            <Text variant="bodySm" tone="subdued">
+                              {price} TL
+                            </Text>
+                          </BlockStack>
+                          <Checkbox
+                            checked={isSelected}
+                            onChange={() => toggleProduct(product)}
+                          />
+                        </InlineStack>
+                      </ResourceItem>
+                    );
+                  }}
+                />
+              )}
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+      </Layout>
     </Page>
   );
 }
