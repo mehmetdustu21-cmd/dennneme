@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://postgres:VirtualTryOn2025SecurePass@db.dpwbsxbjinohzdrvandb.supabase.co:5432/postgres"
+  url      = env("DATABASE_URL")
 }
 
 // Session tablosu (Shopify için gerekli)
