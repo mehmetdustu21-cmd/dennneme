@@ -1,4 +1,4 @@
-import { json } from "@react-router/node";
+import { json } from "react-router";
 import { useLoaderData, useNavigate } from "react-router";
 import {
   Page,

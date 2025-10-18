@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useFetcher, useNavigate } from "react-router";
-import { json } from "@react-router/node";
+import { json } from "react-router";
 import {
   Page,
   Layout,
