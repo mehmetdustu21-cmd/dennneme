@@ -1,18 +1,14 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
+// Prisma Schema - Virtual Try-On
 generator client {
   provider = "prisma-client-js"
 }
 
-// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
-// enough when changing adapters.
-// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
-  provider = "sqlite"
-  url      = "file:dev.sqlite"
+  provider = "postgresql"
+  url      = "postgresql://postgres:VirtualTryOn2025SecurePass@db.dpwbsxbjinohzdrvandb.supabase.co:5432/postgres"
 }
 
+// Session tablosu (Shopify için gerekli)
 model Session {
   id            String    @id
   shop          String
@@ -29,4 +25,34 @@ model Session {
   locale        String?
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
+}
+
+// Kombin (Outfit) tablosu
+model Outfit {
+  id            String          @id @default(cuid())
+  shop          String
+  name          String
+  description   String?
+  mainProductId String
+  active        Boolean         @default(true)
+  products      OutfitProduct[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  @@index([shop])
+}
+
+// Kombindeki ürünler
+model OutfitProduct {
+  id           String   @id @default(cuid())
+  outfitId     String
+  productId    String
+  productTitle String
+  productImage String
+  productPrice String
+  category     String
+  outfit       Outfit   @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  
+  @@index([outfitId])
 }

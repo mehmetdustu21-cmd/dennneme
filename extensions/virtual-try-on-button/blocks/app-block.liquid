@@ -1,0 +1,464 @@
+{% comment %}
+  Virtual Try-On Widget - Bolt Design
+{% endcomment %}
+
+<style>
+  .vto-container {
+    min-height: 100vh;
+    background: #f9fafb;
+    padding: 24px;
+  }
+
+  .vto-wrapper {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .vto-title {
+    font-size: 30px;
+    font-weight: bold;
+    color: #111827;
+    margin-bottom: 24px;
+  }
+
+  .vto-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .vto-panel {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 24px;
+  }
+
+  .vto-panel-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 16px;
+  }
+
+  .vto-section-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 12px;
+  }
+
+  .vto-model-grid, .vto-outfit-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .vto-upload-card {
+    aspect-ratio: 2/3;
+    border-radius: 8px;
+    border: 2px dashed #d1d5db;
+    background: #f9fafb;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+  }
+
+  .vto-upload-card:hover {
+    border-color: #0d6efd;
+    background: #eff6ff;
+  }
+
+  .vto-upload-card svg {
+    width: 32px;
+    height: 32px;
+    color: #9ca3af;
+  }
+
+  .vto-upload-card:hover svg {
+    color: #0d6efd;
+  }
+
+  .vto-upload-card span {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+  }
+
+  .vto-upload-card:hover span {
+    color: #0d6efd;
+  }
+
+  .vto-upload-card.has-image {
+    border: 2px solid #0d6efd;
+    background: transparent;
+  }
+
+  .vto-upload-card.has-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+
+  .vto-item {
+    aspect-ratio: 2/3;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .vto-item:hover {
+    box-shadow: 0 0 0 2px #d1d5db;
+  }
+
+  .vto-item.selected {
+    box-shadow: 0 0 0 4px #0d6efd, 0 0 0 6px white;
+  }
+
+  .vto-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .vto-item-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.5));
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px;
+  }
+
+  .vto-preview {
+    aspect-ratio: 3/4;
+    background: #f3f4f6;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .vto-preview-placeholder {
+    text-align: center;
+    color: #9ca3af;
+  }
+
+  .vto-preview-placeholder svg {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 8px;
+  }
+
+  /* Before/After Slider */
+  .vto-slider-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .vto-before, .vto-after {
+    position: absolute;
+    inset: 0;
+  }
+
+  .vto-before img, .vto-after img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .vto-slider-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    cursor: ew-resize;
+  }
+
+  .vto-slider-handle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px;
+    height: 32px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .vto-badge {
+    position: absolute;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .vto-badge-before {
+    bottom: 16px;
+    left: 16px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+  }
+
+  .vto-badge-after {
+    bottom: 16px;
+    right: 16px;
+    background: #0d6efd;
+    color: white;
+  }
+
+  .vto-upload-btn {
+    width: 100%;
+    padding: 12px 24px;
+    background: #f3f4f6;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    color: #6b7280;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+  }
+
+  .vto-upload-btn:hover {
+    border-color: #0d6efd;
+    color: #0d6efd;
+  }
+
+  .vto-generate-btn {
+    width: 100%;
+    padding: 12px 24px;
+    background: #0d6efd;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+  }
+
+  .vto-generate-btn:hover:not(:disabled) {
+    background: #0b5ed7;
+    transform: scale(0.98);
+  }
+
+  .vto-generate-btn:disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 1024px) {
+    .vto-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="vto-container">
+  <div class="vto-wrapper">
+    <h1 class="vto-title">Virtual Try-On</h1>
+
+    <!-- Hidden file input -->
+    <input type="file" id="vto-upload-hidden" accept="image/*" style="display: none;">
+
+    <div class="vto-grid">
+      
+      <!-- Browse Panel -->
+      <div class="vto-panel">
+        <h2 class="vto-panel-title">Browse</h2>
+
+        <!-- Models -->
+        <div>
+          <h3 class="vto-section-title">Select Model</h3>
+          <div class="vto-model-grid" id="vto-models"></div>
+        </div>
+
+        <!-- Outfits -->
+        <div>
+          <h3 class="vto-section-title">Select Outfit</h3>
+          <div class="vto-outfit-grid">
+            <div class="vto-item" data-outfit="current">
+              <img src="{{ product.featured_image | img_url: '400x' }}" alt="{{ product.title }}">
+              <div class="vto-item-label">{{ product.title }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result Panel -->
+      <div class="vto-panel">
+        <h2 class="vto-panel-title">Result Preview</h2>
+
+        <div class="vto-preview" id="vto-preview">
+          <div class="vto-preview-placeholder">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+            </svg>
+            <p style="font-weight: 500; margin-bottom: 4px;">Ready to Generate</p>
+            <p style="font-size: 14px;">Select a model and click generate</p>
+          </div>
+        </div>
+
+        <button class="vto-generate-btn" id="vto-generate" disabled>
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+          </svg>
+          Generate Try-On
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const models = [
+    { id: 2, name: 'Model 2', image: 'https://images.pexels.com/photos/1181690/pexels-photo-1181690.jpeg?auto=compress&cs=tinysrgb&w=400&h=600' },
+    { id: 3, name: 'Model 3', image: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400&h=600' },
+    { id: 4, name: 'Model 4', image: 'https://images.pexels.com/photos/1065084/pexels-photo-1065084.jpeg?auto=compress&cs=tinysrgb&w=400&h=600' },
+    { id: 5, name: 'Model 5', image: 'https://images.pexels.com/photos/1468379/pexels-photo-1468379.jpeg?auto=compress&cs=tinysrgb&w=400&h=600' },
+    { id: 6, name: 'Model 6', image: 'https://images.pexels.com/photos/1040945/pexels-photo-1040945.jpeg?auto=compress&cs=tinysrgb&w=400&h=600' },
+  ];
+
+  let selectedModel = null;
+  let uploadedPhoto = null;
+  let sliderPosition = 50;
+
+  // Render upload button + models
+  const modelsGrid = document.getElementById('vto-models');
+  
+  // Upload card (first position)
+  const uploadCard = document.createElement('div');
+  uploadCard.className = 'vto-upload-card';
+  uploadCard.id = 'vto-upload-card';
+  uploadCard.innerHTML = `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+    </svg>
+    <span>Upload Photo</span>
+  `;
+  uploadCard.onclick = () => document.getElementById('vto-upload-hidden').click();
+  modelsGrid.appendChild(uploadCard);
+
+  // Render models
+  models.forEach(model => {
+    const div = document.createElement('div');
+    div.className = 'vto-item';
+    div.innerHTML = `
+      <img src="${model.image}" alt="${model.name}">
+      <div class="vto-item-label">${model.name}</div>
+    `;
+    div.onclick = () => selectModel(model, div);
+    modelsGrid.appendChild(div);
+  });
+
+  // Select model
+  function selectModel(model, element) {
+    document.querySelectorAll('.vto-model-grid .vto-item').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedModel = model;
+    updateGenerateButton();
+  }
+
+  // Upload photo
+  document.getElementById('vto-upload-hidden').onchange = function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        uploadedPhoto = event.target.result;
+        
+        // Update upload card with image
+        const card = document.getElementById('vto-upload-card');
+        card.className = 'vto-upload-card has-image';
+        card.innerHTML = `<img src="${uploadedPhoto}" alt="Uploaded">`;
+        
+        // Deselect models
+        document.querySelectorAll('.vto-model-grid .vto-item').forEach(el => el.classList.remove('selected'));
+        selectedModel = null;
+        
+        updateGenerateButton();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Update button state
+  function updateGenerateButton() {
+    const btn = document.getElementById('vto-generate');
+    btn.disabled = !(selectedModel || uploadedPhoto);
+  }
+
+  // Generate
+  document.getElementById('vto-generate').onclick = async function() {
+    const preview = document.getElementById('vto-preview');
+    const modelImage = uploadedPhoto || selectedModel?.image;
+    const outfitImage = '{{ product.featured_image | img_url: "large" }}';
+
+    if (!modelImage) return;
+
+    // Show before/after slider
+    preview.innerHTML = `
+      <div class="vto-slider-container">
+        <div class="vto-before">
+          <img src="${modelImage}" alt="Before">
+          <div class="vto-badge vto-badge-before">Before</div>
+        </div>
+        <div class="vto-after" style="clip-path: inset(0 ${100 - sliderPosition}% 0 0);">
+          <img src="${outfitImage}" alt="After">
+          <div class="vto-badge vto-badge-after">After</div>
+        </div>
+        <div class="vto-slider-divider" style="left: ${sliderPosition}%;">
+          <div class="vto-slider-handle">
+            <div style="width: 2px; height: 16px; background: #9ca3af;"></div>
+            <div style="width: 2px; height: 16px; background: #9ca3af; margin-left: 4px;"></div>
+          </div>
+        </div>
+        <input type="range" min="0" max="100" value="${sliderPosition}" 
+          style="position: absolute; inset: 0; opacity: 0; cursor: ew-resize; width: 100%; height: 100%;"
+          oninput="document.querySelector('.vto-after').style.clipPath = 'inset(0 ' + (100 - this.value) + '% 0 0)'; document.querySelector('.vto-slider-divider').style.left = this.value + '%';">
+      </div>
+    `;
+
+    // TODO: Backend API call
+    // const response = await fetch('/apps/virtual-try-on/api/generate', {...});
+  };
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Virtual Try-On",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { useFetcher } from "react-router";
+import { useFetcher, useNavigate } from "@remix-run/react";
+import { json } from "@remix-run/node";
 import {
   Page,
   Layout,
@@ -9,20 +10,30 @@ import {
   BlockStack,
   Box,
   List,
-  Link,
   InlineStack,
+  Banner,
 } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
+import db from "../db.server";
 
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
-  return null;
+  const { session } = await authenticate.admin(request);
+  
+  // Kombinleri say
+  const outfitCount = await db.outfit.count({
+    where: { shop: session.shop, active: true }
+  });
+
+  return json({ 
+    shop: session.shop,
+    outfitCount 
+  });
 };
 
 export const action = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
-  const color = ["Red", "Orange", "Yellow", "Green"][
+  const color = ["Kırmızı", "Mavi", "Yeşil", "Siyah"][
     Math.floor(Math.random() * 4)
   ];
   
@@ -51,7 +62,7 @@ export const action = async ({ request }) => {
     {
       variables: {
         product: {
-          title: `${color} Snowboard`,
+          title: `${color} Tişört`,
         },
       },
     }
@@ -76,22 +87,24 @@ export const action = async ({ request }) => {
     {
       variables: {
         productId: product.id,
-        variants: [{ id: variantId, price: "100.00" }],
+        variants: [{ id: variantId, price: "299.90" }],
       },
     }
   );
 
   const variantResponseJson = await variantResponse.json();
 
-  return {
+  return json({
     product: responseJson.data.productCreate.product,
     variant: variantResponseJson.data.productVariantsBulkUpdate.productVariants,
-  };
+  });
 };
 
 export default function Index() {
   const fetcher = useFetcher();
+  const navigate = useNavigate();
   const shopify = useAppBridge();
+  const loaderData = fetcher.data || { outfitCount: 0 };
   
   const isLoading =
     ["loading", "submitting"].includes(fetcher.state) &&
@@ -104,7 +117,7 @@ export default function Index() {
 
   useEffect(() => {
     if (productId) {
-      shopify.toast.show("Product created");
+      shopify.toast.show("Test ürünü oluşturuldu!");
     }
   }, [productId, shopify]);
   
@@ -112,11 +125,8 @@ export default function Index() {
 
   return (
     <Page>
-      <TitleBar title="Virtual Try-On">
-        <button variant="primary" onClick={generateProduct}>
-          Generate a product
-        </button>
-      </TitleBar>
+      <TitleBar title="Virtual Try-On Dashboard" />
+      
       <BlockStack gap="500">
         <Layout>
           <Layout.Section>
@@ -124,51 +134,81 @@ export default function Index() {
               <BlockStack gap="500">
                 <BlockStack gap="200">
                   <Text as="h2" variant="headingMd">
-                    🎉 Virtual Try-On Dashboard
+                    👋 Hoş Geldiniz!
                   </Text>
                   <Text variant="bodyMd" as="p">
-                    Müşterileriniz ürünlerinizi sanal olarak deneyebilir. 
-                    AI destekli virtual try-on teknolojisi ile satışlarınızı artırın.
+                    Virtual Try-On uygulamanıza hoş geldiniz. 
+                    Müşterileriniz ürünlerinizi sanal olarak deneyebilir ve kombinler oluşturabilir.
                   </Text>
                 </BlockStack>
+
+                <Banner tone="info">
+                  Kombin özelliği ile müşterileriniz tamamlayıcı ürünleri keşfedebilir 
+                  ve tüm kombini tek tuşla sepete ekleyebilir! 🎯
+                </Banner>
                 
-                <BlockStack gap="200">
+                <BlockStack gap="300">
                   <Text as="h3" variant="headingMd">
-                    Başlayın
+                    🎨 Kombin Yönetimi
                   </Text>
-                  <Text as="p" variant="bodyMd">
-                    Test için bir ürün oluşturun ve virtual try-on özelliğini deneyin.
-                  </Text>
-                </BlockStack>
-                
-                <InlineStack gap="300">
-                  <Button loading={isLoading} onClick={generateProduct}>
-                    Test Ürünü Oluştur
-                  </Button>
-                  {fetcher.data?.product && (
-                    <Button
-                      url={`shopify:admin/products/${productId}`}
-                      target="_blank"
-                      variant="plain"
+                  
+                  <InlineStack gap="300" align="start">
+                    <Button 
+                      variant="primary"
+                      onClick={() => navigate("/app/outfits/new")}
                     >
-                      Ürünü Görüntüle
+                      ➕ Yeni Kombin Oluştur
                     </Button>
-                  )}
-                </InlineStack>
-                
-                {fetcher.data?.product && (
-                  <Box
-                    padding="400"
-                    background="bg-surface-active"
-                    borderWidth="025"
-                    borderRadius="200"
-                    borderColor="border"
-                  >
-                    <Text as="p" variant="bodyMd">
-                      ✓ Ürün başarıyla oluşturuldu: {fetcher.data.product.title}
+                    
+                    <Button onClick={() => navigate("/app/outfits")}>
+                      📋 Tüm Kombinleri Gör ({loaderData.outfitCount || 0})
+                    </Button>
+                  </InlineStack>
+                </BlockStack>
+
+                <Box
+                  padding="400"
+                  background="bg-surface-secondary"
+                  borderRadius="200"
+                >
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="headingMd">
+                      🧪 Test Modu
                     </Text>
-                  </Box>
-                )}
+                    <Text as="p" variant="bodyMd">
+                      Uygulamayı test etmek için örnek bir ürün oluşturun.
+                    </Text>
+                    
+                    <InlineStack gap="300">
+                      <Button loading={isLoading} onClick={generateProduct}>
+                        Test Ürünü Oluştur
+                      </Button>
+                      {fetcher.data?.product && (
+                        <Button
+                          url={`shopify:admin/products/${productId}`}
+                          target="_blank"
+                          variant="plain"
+                        >
+                          Ürünü Görüntüle
+                        </Button>
+                      )}
+                    </InlineStack>
+                    
+                    {fetcher.data?.product && (
+                      <Box
+                        padding="400"
+                        background="bg-surface-success"
+                        borderWidth="025"
+                        borderRadius="200"
+                        borderColor="border-success"
+                      >
+                        <Text as="p" variant="bodyMd">
+                          ✅ Başarılı: {fetcher.data.product.title} oluşturuldu
+                        </Text>
+                      </Box>
+                    )}
+                  </BlockStack>
+                </Box>
               </BlockStack>
             </Card>
           </Layout.Section>
@@ -180,20 +220,20 @@ export default function Index() {
                   <Text as="h2" variant="headingMd">
                     📊 İstatistikler
                   </Text>
-                  <BlockStack gap="200">
+                  <BlockStack gap="300">
                     <InlineStack align="space-between">
                       <Text as="span" variant="bodyMd">
-                        Toplam Try-On
+                        Aktif Kombin
                       </Text>
-                      <Text as="span" variant="bodyMd" fontWeight="bold">
-                        0
+                      <Text as="span" variant="headingMd" fontWeight="bold">
+                        {loaderData.outfitCount || 0}
                       </Text>
                     </InlineStack>
                     <InlineStack align="space-between">
                       <Text as="span" variant="bodyMd">
-                        Bu Ay
+                        Try-On Sayısı
                       </Text>
-                      <Text as="span" variant="bodyMd" fontWeight="bold">
+                      <Text as="span" variant="headingMd" fontWeight="bold">
                         0
                       </Text>
                     </InlineStack>
@@ -201,7 +241,7 @@ export default function Index() {
                       <Text as="span" variant="bodyMd">
                         Kalan Kredi
                       </Text>
-                      <Text as="span" variant="bodyMd" fontWeight="bold">
+                      <Text as="span" variant="headingMd" fontWeight="bold">
                         100
                       </Text>
                     </InlineStack>
@@ -212,19 +252,39 @@ export default function Index() {
               <Card>
                 <BlockStack gap="200">
                   <Text as="h2" variant="headingMd">
-                    🚀 Sonraki Adımlar
+                    🚀 Hızlı Başlangıç
                   </Text>
                   <List>
                     <List.Item>
-                      Ürün sayfalarına Try-On butonu ekleyin
+                      İlk kombinizi oluşturun
                     </List.Item>
                     <List.Item>
-                      Model görsellerini yükleyin
+                      Ürün sayfalarında widget'ı test edin
                     </List.Item>
                     <List.Item>
-                      Ayarlarınızı yapılandırın
+                      fal.ai API anahtarınızı ekleyin
+                    </List.Item>
+                    <List.Item>
+                      Tema ayarlarını yapılandırın
                     </List.Item>
                   </List>
+                </BlockStack>
+              </Card>
+
+              <Card>
+                <BlockStack gap="200">
+                  <Text as="h2" variant="headingMd">
+                    ℹ️ Bilgi
+                  </Text>
+                  <Text variant="bodySm" as="p" tone="subdued">
+                    Version: 1.0.0
+                  </Text>
+                  <Text variant="bodySm" as="p" tone="subdued">
+                    Status: Beta
+                  </Text>
+                  <Text variant="bodySm" as="p" tone="subdued">
+                    Hosting: Render.com
+                  </Text>
                 </BlockStack>
               </Card>
             </BlockStack>
