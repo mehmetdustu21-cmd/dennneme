@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useFetcher, useNavigate } from "react-router";
-return { outfits };
 import {
   Page,
   Layout,
@@ -20,15 +19,11 @@ import db from "../db.server";
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   
-  // Kombinleri say
   const outfitCount = await db.outfit.count({
     where: { shop: session.shop, active: true }
   });
 
-  return json({ 
-    shop: session.shop,
-    outfitCount 
-  });
+  return { shop: session.shop, outfitCount };
 };
 
 export const action = async ({ request }) => {
@@ -94,10 +89,10 @@ export const action = async ({ request }) => {
 
   const variantResponseJson = await variantResponse.json();
 
-  return json({
+  return {
     product: responseJson.data.productCreate.product,
     variant: variantResponseJson.data.productVariantsBulkUpdate.productVariants,
-  });
+  };
 };
 
 export default function Index() {
