@@ -120,7 +120,7 @@ export default function Index() {
                     Free plan includes "Powered by" branding.
                   </Text>
 
-                  <Button variant="primary">
+                  <Button variant="primary" onClick={() => navigate("/app/plans")}>
                     View plans
                   </Button>
                 </BlockStack>
@@ -392,4 +392,3 @@ export default function Index() {
       </BlockStack>
     </Page>
   );
-}
