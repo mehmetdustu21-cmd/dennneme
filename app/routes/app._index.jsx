@@ -59,6 +59,7 @@ export default function Index() {
   const navigate = useNavigate();
   const loaderData = useLoaderData();
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false);
+  const [selectedCredits, setSelectedCredits] = useState(50);
   
   // Gerçek kullanım verisi (şimdilik simüle)
   const usageData = {
@@ -75,12 +76,27 @@ export default function Index() {
   const creditsRemaining = usageData.creditsTotal - usageData.creditsUsed;
   const isLowCredits = creditsRemaining <= 5;
 
-  const creditPackages = [
-    { credits: 10, price: 9, popular: false },
-    { credits: 50, price: 40, popular: true, savings: "11%" },
-    { credits: 100, price: 75, popular: false, savings: "17%" },
-    { credits: 250, price: 175, popular: false, savings: "22%" }
-  ];
+  // Dinamik fiyatlandırma (toplu alımda indirim)
+  const calculatePrice = (credits) => {
+    let pricePerCredit;
+    if (credits >= 5000) pricePerCredit = 0.08; // 8 cent
+    else if (credits >= 2000) pricePerCredit = 0.10; // 10 cent
+    else if (credits >= 1000) pricePerCredit = 0.12; // 12 cent
+    else if (credits >= 500) pricePerCredit = 0.15; // 15 cent
+    else if (credits >= 200) pricePerCredit = 0.18; // 18 cent
+    else if (credits >= 100) pricePerCredit = 0.20; // 20 cent
+    else if (credits >= 50) pricePerCredit = 0.25; // 25 cent
+    else pricePerCredit = 0.30; // 30 cent
+    
+    return (credits * pricePerCredit).toFixed(2);
+  };
+
+  const currentPrice = calculatePrice(selectedCredits);
+  const pricePerCredit = (currentPrice / selectedCredits).toFixed(3);
+
+  // İndirim oranı hesaplama
+  const basePrice = selectedCredits * 0.30; // Normal fiyat (30 cent/credit)
+  const discount = ((basePrice - currentPrice) / basePrice * 100).toFixed(0);
 
   return (
     <Page>
@@ -430,45 +446,161 @@ export default function Index() {
         onClose={() => setShowBuyCreditsModal(false)}
         title="Buy Additional Credits"
         primaryAction={{
-          content: 'Close',
-          onAction: () => setShowBuyCreditsModal(false),
+          content: `Buy ${selectedCredits} Credits for ${currentPrice}`,
+          onAction: () => {
+            // TODO: Ödeme işlemi
+            alert(`Purchasing ${selectedCredits} credits for ${currentPrice}`);
+            setShowBuyCreditsModal(false);
+          },
         }}
+        secondaryActions={[
+          {
+            content: 'Cancel',
+            onAction: () => setShowBuyCreditsModal(false),
+          },
+        ]}
       >
         <Modal.Section>
-          <BlockStack gap="400">
+          <BlockStack gap="500">
             <Text variant="bodyMd">
               Purchase additional credits for your account. Credits never expire.
             </Text>
 
-            <BlockStack gap="300">
-              {creditPackages.map((pkg, index) => (
-                <Card key={index}>
-                  <InlineStack align="space-between" blockAlign="center">
-                    <BlockStack gap="100">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Text variant="headingMd" as="h3">
-                          {pkg.credits} Credits
-                        </Text>
-                        {pkg.popular && (
-                          <Badge tone="success">Popular</Badge>
-                        )}
-                      </InlineStack>
-                      <Text variant="bodySm" tone="subdued">
-                        ${(pkg.price / pkg.credits).toFixed(2)} per credit
-                        {pkg.savings && ` • Save ${pkg.savings}`}
-                      </Text>
-                    </BlockStack>
-                    <Button variant="primary">
-                      ${pkg.price}
-                    </Button>
-                  </InlineStack>
-                </Card>
-              ))}
+            {/* Credit Selector */}
+            <Card>
+              <BlockStack gap="400">
+                <InlineStack align="space-between" blockAlign="center">
+                  <Text variant="headingLg" as="h3">
+                    {selectedCredits.toLocaleString()} Credits
+                  </Text>
+                  <Text variant="heading2xl" as="h2">
+                    ${currentPrice}
+                  </Text>
+                </InlineStack>
+
+                <Text variant="bodySm" tone="subdued">
+                  ${pricePerCredit} per credit
+                  {discount > 0 && ` • Save ${discount}%`}
+                </Text>
+
+                {/* Slider */}
+                <div style={{ padding: '20px 0' }}>
+                  <input
+                    type="range"
+                    min="10"
+                    max="10000"
+                    step="10"
+                    value={selectedCredits}
+                    onChange={(e) => setSelectedCredits(parseInt(e.target.value))}
+                    style={{
+                      width: '100%',
+                      height: '8px',
+                      borderRadius: '4px',
+                      background: `linear-gradient(to right, #4ADE80 0%, #4ADE80 ${(selectedCredits / 10000) * 100}%, #E5E7EB ${(selectedCredits / 10000) * 100}%, #E5E7EB 100%)`,
+                      outline: 'none',
+                      cursor: 'pointer',
+                      WebkitAppearance: 'none',
+                      appearance: 'none'
+                    }}
+                  />
+                  <style>{`
+                    input[type="range"]::-webkit-slider-thumb {
+                      -webkit-appearance: none;
+                      appearance: none;
+                      width: 20px;
+                      height: 20px;
+                      border-radius: 50%;
+                      background: #4ADE80;
+                      cursor: pointer;
+                      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                    }
+                    input[type="range"]::-moz-range-thumb {
+                      width: 20px;
+                      height: 20px;
+                      border-radius: 50%;
+                      background: #4ADE80;
+                      cursor: pointer;
+                      border: none;
+                      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                    }
+                  `}</style>
+                </div>
+
+                <InlineStack align="space-between">
+                  <Text variant="bodySm" tone="subdued">10 credits</Text>
+                  <Text variant="bodySm" tone="subdued">10,000 credits</Text>
+                </InlineStack>
+              </BlockStack>
+            </Card>
+
+            {/* Quick Select Buttons */}
+            <BlockStack gap="200">
+              <Text variant="bodyMd" fontWeight="semibold">
+                Quick Select:
+              </Text>
+              <InlineStack gap="200" wrap>
+                {[50, 100, 500, 1000, 2000, 5000, 10000].map((amount) => (
+                  <Button
+                    key={amount}
+                    size="slim"
+                    onClick={() => setSelectedCredits(amount)}
+                    variant={selectedCredits === amount ? "primary" : "secondary"}
+                  >
+                    {amount.toLocaleString()}
+                  </Button>
+                ))}
+              </InlineStack>
             </BlockStack>
+
+            {/* Pricing Tiers */}
+            <Card>
+              <BlockStack gap="300">
+                <Text variant="headingSm" as="h3">
+                  💰 Volume Discounts
+                </Text>
+                <BlockStack gap="200">
+                  <InlineStack align="space-between">
+                    <Text variant="bodySm">10-49 credits</Text>
+                    <Text variant="bodySm" fontWeight="semibold">$0.30/credit</Text>
+                  </InlineStack>
+                  <InlineStack align="space-between">
+                    <Text variant="bodySm">50-99 credits</Text>
+                    <Text variant="bodySm" fontWeight="semibold">$0.25/credit</Text>
+                  </InlineStack>
+                  <InlineStack align="space-between">
+                    <Text variant="bodySm">100-199 credits</Text>
+                    <Text variant="bodySm" fontWeight="semibold">$0.20/credit</Text>
+                  </InlineStack>
+                  <InlineStack align="space-between">
+                    <Text variant="bodySm">200-499 credits</Text>
+                    <Text variant="bodySm" fontWeight="semibold">$0.18/credit</Text>
+                  </InlineStack>
+                  <InlineStack align="space-between">
+                    <Text variant="bodySm">500-999 credits</Text>
+                    <Text variant="bodySm" fontWeight="semibold">$0.15/credit</Text>
+                  </InlineStack>
+                  <InlineStack align="space-between">
+                    <Text variant="bodySm">1,000-1,999 credits</Text>
+                    <Text variant="bodySm" fontWeight="semibold">$0.12/credit</Text>
+                  </InlineStack>
+                  <InlineStack align="space-between">
+                    <Text variant="bodySm">2,000-4,999 credits</Text>
+                    <Text variant="bodySm" fontWeight="semibold">$0.10/credit</Text>
+                  </InlineStack>
+                  <InlineStack align="space-between">
+                    <Text variant="bodySm" fontWeight="bold">5,000+ credits</Text>
+                    <Text variant="bodySm" fontWeight="bold" tone="success">$0.08/credit 🎉</Text>
+                  </InlineStack>
+                </BlockStack>
+              </BlockStack>
+            </Card>
 
             <Banner tone="info">
               <Text variant="bodySm">
-                Need more? Check out our subscription plans for better rates and additional features.
+                Want even better rates? Check out our <Button variant="plain" onClick={() => {
+                  setShowBuyCreditsModal(false);
+                  navigate("/app/plans");
+                }}>subscription plans</Button> for monthly credits and additional features.
               </Text>
             </Banner>
           </BlockStack>
