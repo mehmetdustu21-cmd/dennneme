@@ -14,51 +14,58 @@ import {
   BlockStack,
   InlineStack,
   Checkbox,
-  Spinner,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 
 export const loader = async ({ request }) => {
-  const { admin, session } = await authenticate.admin(request);
-  
-  // Shopify'dan ilk 50 ürünü çek
-  const response = await admin.graphql(
-    `#graphql
-    query getProducts {
-      products(first: 50) {
-        edges {
-          node {
-            id
-            title
-            featuredImage {
-              url
-            }
-            variants(first: 1) {
-              edges {
-                node {
-                  price
+  try {
+    const { admin, session } = await authenticate.admin(request);
+    
+    const response = await admin.graphql(
+      `#graphql
+      query getProducts {
+        products(first: 50) {
+          edges {
+            node {
+              id
+              title
+              featuredImage {
+                url
+              }
+              variants(first: 1) {
+                edges {
+                  node {
+                    price
+                  }
                 }
               }
+              productType
             }
-            productType
           }
         }
-      }
-    }`
-  );
+      }`
+    );
 
-  const result = await response.json();
-  const products = result.data.products.edges.map(edge => ({
-    id: edge.node.id.split("/").pop(),
-    fullId: edge.node.id,
-    title: edge.node.title,
-    image: edge.node.featuredImage?.url || "",
-    price: edge.node.variants.edges[0]?.node.price || "0",
-    category: edge.node.productType || "Genel"
-  }));
+    const result = await response.json();
+    
+    if (result.errors) {
+      return { shop: session.shop, products: [], error: "GraphQL hatası" };
+    }
 
-  return { shop: session.shop, products };
+    const products = result.data?.products?.edges?.map(edge => ({
+      id: edge.node.id.split("/").pop(),
+      fullId: edge.node.id,
+      title: edge.node.title,
+      image: edge.node.featuredImage?.url || "",
+      price: edge.node.variants.edges[0]?.node.price || "0",
+      category: edge.node.productType || "Genel"
+    })) || [];
+
+    return { shop: session.shop, products };
+  } catch (error) {
+    return { shop: "unknown", products: [], error: error.message };
+  }
 };
 
 export const action = async ({ request }) => {
@@ -101,13 +108,26 @@ export const action = async ({ request }) => {
 
 export default function NewOutfit() {
   const actionData = useActionData();
-  const { shop, products } = useLoaderData();
+  const loaderData = useLoaderData();
   const submit = useSubmit();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Hata varsa göster
+  if (loaderData?.error) {
+    return (
+      <Page title="Hata">
+        <Banner tone="critical">
+          Ürünler yüklenemedi: {loaderData.error}
+        </Banner>
+      </Page>
+    );
+  }
+
+  const { shop, products } = loaderData;
 
   // Arama filtresi
   const filteredProducts = products.filter(product =>
@@ -239,7 +259,7 @@ export default function NewOutfit() {
           <Card>
             <BlockStack gap="400">
               <Text variant="headingMd" as="h2">
-                Mağazadaki Ürünler
+                Mağazadaki Ürünler ({products.length})
               </Text>
 
               <TextField
@@ -252,8 +272,12 @@ export default function NewOutfit() {
                 onClearButtonClick={() => setSearchQuery("")}
               />
 
-              {filteredProducts.length === 0 ? (
-                <Banner>Ürün bulunamadı.</Banner>
+              {products.length === 0 ? (
+                <Banner>
+                  Mağazanızda hiç ürün yok. Önce Shopify'da ürün oluşturun.
+                </Banner>
+              ) : filteredProducts.length === 0 ? (
+                <Banner>Arama sonucu bulunamadı.</Banner>
               ) : (
                 <ResourceList
                   resourceName={{ singular: "ürün", plural: "ürünler" }}
