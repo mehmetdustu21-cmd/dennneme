@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Page, Layout, Card, Text, Button, BlockStack, InlineStack, Badge, Icon, List, Banner } from "@shopify/polaris";
+import { Page, Layout, Card, Text, Button, BlockStack, InlineStack, Badge, Icon, Banner } from "@shopify/polaris";
 import { CheckIcon } from "@shopify/polaris-icons";
 
 export default function Plans() {
@@ -10,10 +10,11 @@ export default function Plans() {
       name: "Pay-as-you-go",
       price: billingCycle === "monthly" ? "0" : "0",
       credits: "Pay per use",
-      description: "Perfect for testing and occasional use",
+      description: "Perfect for testing with your own product images",
       popular: false,
       features: [
-        "$0.50 per generation",
+        "$1.00 per generation",
+        "Use your store's product images",
         "No monthly commitment",
         "Basic support",
         "Standard processing speed",
@@ -27,17 +28,18 @@ export default function Plans() {
     {
       name: "Basic",
       price: billingCycle === "monthly" ? "29" : "290",
-      credits: "100 credits/month",
+      credits: "50 credits/month",
       description: "Great for small stores getting started",
       popular: false,
       features: [
-        "100 generations per month",
-        "$0.25 per extra generation",
+        "50 generations per month",
+        "$0.90 per extra generation",
         "Email support",
         "Priority processing",
         "Remove branding",
         "Basic analytics",
-        "Custom models (3)"
+        "Custom models (3)",
+        "Standard API access"
       ],
       buttonText: "Upgrade to Basic",
       buttonVariant: "primary"
@@ -45,18 +47,18 @@ export default function Plans() {
     {
       name: "Pro",
       price: billingCycle === "monthly" ? "79" : "790",
-      credits: "500 credits/month",
+      credits: "200 credits/month",
       description: "Best for growing businesses",
       popular: true,
       features: [
-        "500 generations per month",
-        "$0.15 per extra generation",
+        "200 generations per month",
+        "$0.70 per extra generation",
         "Priority email & chat support",
         "Fastest processing",
         "Remove branding",
         "Advanced analytics",
         "Custom models (unlimited)",
-        "API access",
+        "Advanced API access",
         "Bulk operations"
       ],
       buttonText: "Upgrade to Pro",
@@ -70,6 +72,7 @@ export default function Plans() {
       popular: false,
       features: [
         "Unlimited generations",
+        "$0.50 per extra generation",
         "Dedicated account manager",
         "24/7 phone & chat support",
         "Maximum processing speed",
@@ -84,8 +87,6 @@ export default function Plans() {
       buttonVariant: "primary"
     }
   ];
-
-  const savings = Math.round(((parseFloat(plans[1].price) * 12 - parseFloat(plans[1].price.replace('290', '290'))) / (parseFloat(plans[1].price) * 12)) * 100);
 
   return (
     <Page 
@@ -212,6 +213,42 @@ export default function Plans() {
           ))}
         </Layout>
 
+        {/* Pricing Comparison */}
+        <Layout>
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="400">
+                <Text variant="headingMd" as="h2">
+                  💰 Cost Efficiency Breakdown
+                </Text>
+
+                <BlockStack gap="300">
+                  <InlineStack align="space-between">
+                    <Text variant="bodyMd">Pay-as-you-go (100 gens)</Text>
+                    <Text variant="bodyMd" fontWeight="bold">$100.00</Text>
+                  </InlineStack>
+
+                  <InlineStack align="space-between">
+                    <Text variant="bodyMd">Basic (50 + 50 extra)</Text>
+                    <Text variant="bodyMd" fontWeight="bold">$74.00</Text>
+                  </InlineStack>
+
+                  <InlineStack align="space-between">
+                    <Text variant="bodyMd">Pro (200 gens)</Text>
+                    <Text variant="bodyMd" fontWeight="bold">$79.00</Text>
+                  </InlineStack>
+
+                  <Banner tone="success">
+                    <Text variant="bodySm">
+                      Pro plan saves you $21 compared to Pay-as-you-go for 200 generations!
+                    </Text>
+                  </Banner>
+                </BlockStack>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        </Layout>
+
         {/* FAQ */}
         <Layout>
           <Layout.Section>
@@ -227,7 +264,7 @@ export default function Plans() {
                       What happens when I run out of credits?
                     </Text>
                     <Text variant="bodySm" tone="subdued">
-                      You can purchase additional credits at your plan's overage rate, or upgrade to a higher plan for better rates and more included credits.
+                      You can purchase additional credits at your plan's overage rate ($0.90 for Basic, $0.70 for Pro), or upgrade to a higher plan for better rates and more included credits.
                     </Text>
                   </BlockStack>
 
@@ -255,6 +292,15 @@ export default function Plans() {
                     </Text>
                     <Text variant="bodySm" tone="subdued">
                       We accept all major credit cards (Visa, MasterCard, American Express) and payments through your Shopify account.
+                    </Text>
+                  </BlockStack>
+
+                  <BlockStack gap="100">
+                    <Text variant="bodyMd" fontWeight="semibold">
+                      How does the 14-day free trial work?
+                    </Text>
+                    <Text variant="bodySm" tone="subdued">
+                      Start with any plan and get full access for 14 days. No credit card required. You can cancel anytime during the trial period with no charges.
                     </Text>
                   </BlockStack>
                 </BlockStack>
