@@ -28,12 +28,12 @@ export default function Plans() {
     {
       name: "Basic",
       price: billingCycle === "monthly" ? "29" : "290",
-      credits: "50 credits/month",
+      credits: "100 credits/month",
       description: "Great for small stores getting started",
       popular: false,
       features: [
         "50 generations per month",
-        "$0.90 per extra generation",
+        "$0.09 per extra generation",
         "Email support",
         "Priority processing",
         "Remove branding",
@@ -47,12 +47,12 @@ export default function Plans() {
     {
       name: "Pro",
       price: billingCycle === "monthly" ? "79" : "790",
-      credits: "200 credits/month",
+      credits: "500 credits/month",
       description: "Best for growing businesses",
       popular: true,
       features: [
         "200 generations per month",
-        "$0.70 per extra generation",
+        "$0.07 per extra generation",
         "Priority email & chat support",
         "Fastest processing",
         "Remove branding",
