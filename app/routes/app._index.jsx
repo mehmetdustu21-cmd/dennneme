@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useFetcher, useNavigate } from "react-router";
+import { useFetcher, useNavigate, useLoaderData } from "react-router";
 import {
   Page,
   Layout,
@@ -19,11 +19,31 @@ import db from "../db.server";
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   
+  // Aktif kombin sayısı
   const outfitCount = await db.outfit.count({
     where: { shop: session.shop, active: true }
   });
 
-  return { shop: session.shop, outfitCount };
+  // Toplam ürün sayısı (kombinlerdeki)
+  const totalProducts = await db.outfitProduct.count({
+    where: {
+      outfit: {
+        shop: session.shop
+      }
+    }
+  });
+
+  // Toplam kombin sayısı (aktif + pasif)
+  const totalOutfits = await db.outfit.count({
+    where: { shop: session.shop }
+  });
+
+  return { 
+    shop: session.shop,
+    outfitCount,
+    totalProducts,
+    totalOutfits
+  };
 };
 
 export const action = async ({ request }) => {
@@ -99,7 +119,7 @@ export default function Index() {
   const fetcher = useFetcher();
   const navigate = useNavigate();
   const shopify = useAppBridge();
-  const loaderData = fetcher.data || { outfitCount: 0 };
+  const loaderData = useLoaderData();
   
   const isLoading =
     ["loading", "submitting"].includes(fetcher.state) &&
@@ -156,7 +176,7 @@ export default function Index() {
                     </Button>
                     
                     <Button onClick={() => navigate("/app/outfits")}>
-                      📋 Tüm Kombinleri Gör ({loaderData.outfitCount || 0})
+                      📋 Tüm Kombinleri Gör ({loaderData.totalOutfits})
                     </Button>
                   </InlineStack>
                 </BlockStack>
@@ -221,23 +241,23 @@ export default function Index() {
                         Aktif Kombin
                       </Text>
                       <Text as="span" variant="headingMd" fontWeight="bold">
-                        {loaderData.outfitCount || 0}
+                        {loaderData.outfitCount}
                       </Text>
                     </InlineStack>
                     <InlineStack align="space-between">
                       <Text as="span" variant="bodyMd">
-                        Try-On Sayısı
+                        Toplam Kombin
                       </Text>
                       <Text as="span" variant="headingMd" fontWeight="bold">
-                        0
+                        {loaderData.totalOutfits}
                       </Text>
                     </InlineStack>
                     <InlineStack align="space-between">
                       <Text as="span" variant="bodyMd">
-                        Kalan Kredi
+                        Kombindeki Ürünler
                       </Text>
                       <Text as="span" variant="headingMd" fontWeight="bold">
-                        100
+                        {loaderData.totalProducts}
                       </Text>
                     </InlineStack>
                   </BlockStack>
@@ -257,10 +277,10 @@ export default function Index() {
                       Ürün sayfalarında widget'ı test edin
                     </List.Item>
                     <List.Item>
-                      fal.ai API anahtarınızı ekleyin
+                      AI görüntü işleme ayarlarını yapılandırın
                     </List.Item>
                     <List.Item>
-                      Tema ayarlarını yapılandırın
+                      Tema renklerini özelleştirin
                     </List.Item>
                   </List>
                 </BlockStack>
@@ -269,16 +289,16 @@ export default function Index() {
               <Card>
                 <BlockStack gap="200">
                   <Text as="h2" variant="headingMd">
-                    ℹ️ Bilgi
+                    ℹ️ Sistem Bilgisi
                   </Text>
                   <Text variant="bodySm" as="p" tone="subdued">
                     Version: 1.0.0
                   </Text>
                   <Text variant="bodySm" as="p" tone="subdued">
-                    Status: Beta
+                    Status: Active
                   </Text>
                   <Text variant="bodySm" as="p" tone="subdued">
-                    Hosting: Render.com
+                    Last Updated: {new Date().toLocaleDateString('tr-TR')}
                   </Text>
                 </BlockStack>
               </Card>
