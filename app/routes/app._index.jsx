@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState } from "react";
 import { useFetcher, useNavigate, useLoaderData } from "react-router";
 import {
   Page,
@@ -11,12 +11,15 @@ import {
   Badge,
   ProgressBar,
   Icon,
+  Modal,
+  Banner,
 } from "@shopify/polaris";
 import { 
   CheckIcon,
   ImageIcon,
   SettingsIcon,
-  ChartVerticalIcon
+  ChartVerticalIcon,
+  AlertTriangleIcon
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -55,8 +58,9 @@ export const loader = async ({ request }) => {
 export default function Index() {
   const navigate = useNavigate();
   const loaderData = useLoaderData();
+  const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false);
   
-  // Simüle edilmiş kullanım verisi
+  // Gerçek kullanım verisi (şimdilik simüle)
   const usageData = {
     totalGenerations: 15,
     cacheHitRate: 40.0,
@@ -64,9 +68,19 @@ export default function Index() {
     uncached: 9,
     creditsUsed: 16,
     creditsTotal: 25,
+    currentPlan: "Free Plan"
   };
 
   const creditsPercentage = (usageData.creditsUsed / usageData.creditsTotal) * 100;
+  const creditsRemaining = usageData.creditsTotal - usageData.creditsUsed;
+  const isLowCredits = creditsRemaining <= 5;
+
+  const creditPackages = [
+    { credits: 10, price: 9, popular: false },
+    { credits: 50, price: 40, popular: true, savings: "11%" },
+    { credits: 100, price: 75, popular: false, savings: "17%" },
+    { credits: 250, price: 175, popular: false, savings: "22%" }
+  ];
 
   return (
     <Page>
@@ -84,7 +98,7 @@ export default function Index() {
                     <Text variant="headingMd" as="h2">
                       Subscription status
                     </Text>
-                    <Badge tone="success">Free Plan</Badge>
+                    <Badge tone="success">{usageData.currentPlan}</Badge>
                   </InlineStack>
 
                   <Text variant="bodySm" tone="subdued">
@@ -97,7 +111,7 @@ export default function Index() {
                         Credits remaining
                       </Text>
                       <Text variant="headingLg" as="h3">
-                        {usageData.creditsUsed} / {usageData.creditsTotal}
+                        {creditsRemaining} / {usageData.creditsTotal}
                       </Text>
                     </BlockStack>
 
@@ -113,16 +127,35 @@ export default function Index() {
 
                   <ProgressBar 
                     progress={creditsPercentage} 
-                    tone={creditsPercentage > 80 ? "critical" : "primary"}
+                    tone={creditsPercentage > 80 ? "critical" : creditsPercentage > 60 ? "caution" : "primary"}
                   />
+
+                  {isLowCredits && (
+                    <Banner tone="warning">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Icon source={AlertTriangleIcon} tone="base" />
+                        <Text variant="bodySm">
+                          You're running low on credits! Buy more or upgrade your plan.
+                        </Text>
+                      </InlineStack>
+                    </Banner>
+                  )}
 
                   <Text variant="bodySm" tone="subdued">
                     Free plan includes "Powered by" branding.
                   </Text>
 
-                  <Button variant="primary" onClick={() => navigate("/app/plans")}>
-                    View plans
-                  </Button>
+                  <InlineStack gap="300">
+                    <Button 
+                      variant="primary" 
+                      onClick={() => navigate("/app/plans")}
+                    >
+                      View plans
+                    </Button>
+                    <Button onClick={() => setShowBuyCreditsModal(true)}>
+                      Buy More Credits
+                    </Button>
+                  </InlineStack>
                 </BlockStack>
               </Card>
 
@@ -390,6 +423,57 @@ export default function Index() {
           </Layout.Section>
         </Layout>
       </BlockStack>
+
+      {/* Buy Credits Modal */}
+      <Modal
+        open={showBuyCreditsModal}
+        onClose={() => setShowBuyCreditsModal(false)}
+        title="Buy Additional Credits"
+        primaryAction={{
+          content: 'Close',
+          onAction: () => setShowBuyCreditsModal(false),
+        }}
+      >
+        <Modal.Section>
+          <BlockStack gap="400">
+            <Text variant="bodyMd">
+              Purchase additional credits for your account. Credits never expire.
+            </Text>
+
+            <BlockStack gap="300">
+              {creditPackages.map((pkg, index) => (
+                <Card key={index}>
+                  <InlineStack align="space-between" blockAlign="center">
+                    <BlockStack gap="100">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Text variant="headingMd" as="h3">
+                          {pkg.credits} Credits
+                        </Text>
+                        {pkg.popular && (
+                          <Badge tone="success">Popular</Badge>
+                        )}
+                      </InlineStack>
+                      <Text variant="bodySm" tone="subdued">
+                        ${(pkg.price / pkg.credits).toFixed(2)} per credit
+                        {pkg.savings && ` • Save ${pkg.savings}`}
+                      </Text>
+                    </BlockStack>
+                    <Button variant="primary">
+                      ${pkg.price}
+                    </Button>
+                  </InlineStack>
+                </Card>
+              ))}
+            </BlockStack>
+
+            <Banner tone="info">
+              <Text variant="bodySm">
+                Need more? Check out our subscription plans for better rates and additional features.
+              </Text>
+            </Banner>
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
     </Page>
   );
 }
