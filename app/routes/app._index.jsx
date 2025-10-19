@@ -7,12 +7,18 @@ import {
   Card,
   Button,
   BlockStack,
-  Box,
-  List,
   InlineStack,
-  Banner,
+  Badge,
+  ProgressBar,
+  Icon,
 } from "@shopify/polaris";
-import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
+import { 
+  CheckIcon,
+  ImageIcon,
+  SettingsIcon,
+  ChartVerticalIcon
+} from "@shopify/polaris-icons";
+import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 
@@ -24,7 +30,7 @@ export const loader = async ({ request }) => {
     where: { shop: session.shop, active: true }
   });
 
-  // Toplam ürün sayısı (kombinlerdeki)
+  // Toplam ürün sayısı
   const totalProducts = await db.outfitProduct.count({
     where: {
       outfit: {
@@ -33,7 +39,7 @@ export const loader = async ({ request }) => {
     }
   });
 
-  // Toplam kombin sayısı (aktif + pasif)
+  // Toplam kombin sayısı
   const totalOutfits = await db.outfit.count({
     where: { shop: session.shop }
   });
@@ -46,260 +52,338 @@ export const loader = async ({ request }) => {
   };
 };
 
-export const action = async ({ request }) => {
-  const { admin } = await authenticate.admin(request);
-  const color = ["Kırmızı", "Mavi", "Yeşil", "Siyah"][
-    Math.floor(Math.random() * 4)
-  ];
-  
-  const response = await admin.graphql(
-    `#graphql
-      mutation populateProduct($product: ProductCreateInput!) {
-        productCreate(product: $product) {
-          product {
-            id
-            title
-            handle
-            status
-            variants(first: 10) {
-              edges {
-                node {
-                  id
-                  price
-                  barcode
-                  createdAt
-                }
-              }
-            }
-          }
-        }
-      }`,
-    {
-      variables: {
-        product: {
-          title: `${color} Tişört`,
-        },
-      },
-    }
-  );
-  
-  const responseJson = await response.json();
-  const product = responseJson.data.productCreate.product;
-  const variantId = product.variants.edges[0].node.id;
-
-  const variantResponse = await admin.graphql(
-    `#graphql
-    mutation shopifyRemixTemplateUpdateVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-        productVariants {
-          id
-          price
-          barcode
-          createdAt
-        }
-      }
-    }`,
-    {
-      variables: {
-        productId: product.id,
-        variants: [{ id: variantId, price: "299.90" }],
-      },
-    }
-  );
-
-  const variantResponseJson = await variantResponse.json();
-
-  return {
-    product: responseJson.data.productCreate.product,
-    variant: variantResponseJson.data.productVariantsBulkUpdate.productVariants,
-  };
-};
-
 export default function Index() {
-  const fetcher = useFetcher();
   const navigate = useNavigate();
-  const shopify = useAppBridge();
   const loaderData = useLoaderData();
   
-  const isLoading =
-    ["loading", "submitting"].includes(fetcher.state) &&
-    fetcher.formMethod === "POST";
-    
-  const productId = fetcher.data?.product?.id.replace(
-    "gid://shopify/Product/",
-    ""
-  );
+  // Simüle edilmiş kullanım verisi
+  const usageData = {
+    totalGenerations: 15,
+    cacheHitRate: 40.0,
+    cached: 6,
+    uncached: 9,
+    creditsUsed: 16,
+    creditsTotal: 25,
+  };
 
-  useEffect(() => {
-    if (productId) {
-      shopify.toast.show("Test ürünü oluşturuldu!");
-    }
-  }, [productId, shopify]);
-  
-  const generateProduct = () => fetcher.submit({}, { method: "POST" });
+  const creditsPercentage = (usageData.creditsUsed / usageData.creditsTotal) * 100;
 
   return (
     <Page>
-      <TitleBar title="Virtual Try-On Dashboard" />
+      <TitleBar title="Dashboard" />
       
       <BlockStack gap="500">
         <Layout>
+          {/* Sol Kolon - Ana İçerik */}
           <Layout.Section>
-            <Card>
-              <BlockStack gap="500">
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    👋 Hoş Geldiniz!
-                  </Text>
-                  <Text variant="bodyMd" as="p">
-                    Virtual Try-On uygulamanıza hoş geldiniz. 
-                    Müşterileriniz ürünlerinizi sanal olarak deneyebilir ve kombinler oluşturabilir.
-                  </Text>
-                </BlockStack>
+            <BlockStack gap="400">
+              {/* Abonelik Durumu */}
+              <Card>
+                <BlockStack gap="400">
+                  <InlineStack align="space-between" blockAlign="center">
+                    <Text variant="headingMd" as="h2">
+                      Subscription status
+                    </Text>
+                    <Badge tone="success">Free Plan</Badge>
+                  </InlineStack>
 
-                <Banner tone="info">
-                  Kombin özelliği ile müşterileriniz tamamlayıcı ürünleri keşfedebilir 
-                  ve tüm kombini tek tuşla sepete ekleyebilir! 🎯
-                </Banner>
-                
-                <BlockStack gap="300">
-                  <Text as="h3" variant="headingMd">
-                    🎨 Kombin Yönetimi
+                  <Text variant="bodySm" tone="subdued">
+                    Your current plan and usage
                   </Text>
-                  
-                  <InlineStack gap="300" align="start">
+
+                  <InlineStack gap="800" blockAlign="start">
+                    <BlockStack gap="200">
+                      <Text variant="bodySm" tone="subdued">
+                        Credits remaining
+                      </Text>
+                      <Text variant="headingLg" as="h3">
+                        {usageData.creditsUsed} / {usageData.creditsTotal}
+                      </Text>
+                    </BlockStack>
+
+                    <BlockStack gap="200">
+                      <Text variant="bodySm" tone="subdued">
+                        Billing cycle
+                      </Text>
+                      <Text variant="bodyMd">
+                        Ends Nov 16, 2025
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+
+                  <ProgressBar 
+                    progress={creditsPercentage} 
+                    tone={creditsPercentage > 80 ? "critical" : "primary"}
+                  />
+
+                  <Text variant="bodySm" tone="subdued">
+                    Free plan includes "Powered by" branding.
+                  </Text>
+
+                  <Button variant="primary">
+                    View plans
+                  </Button>
+                </BlockStack>
+              </Card>
+
+              {/* Kullanım İstatistikleri */}
+              <Card>
+                <BlockStack gap="400">
+                  <InlineStack align="space-between" blockAlign="center">
+                    <Text variant="headingMd" as="h2">
+                      Usage Analytics (Last 7 Days)
+                    </Text>
+                    <Button variant="plain" onClick={() => navigate("/app/analytics")}>
+                      View Details
+                    </Button>
+                  </InlineStack>
+
+                  <InlineStack gap="800" blockAlign="start">
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" tone="subdued">
+                        Total Generations
+                      </Text>
+                      <Text variant="headingLg" as="h3">
+                        {usageData.totalGenerations}
+                      </Text>
+                    </BlockStack>
+
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" tone="subdued">
+                        Cache Hit Rate
+                      </Text>
+                      <Text variant="headingLg" as="h3">
+                        {usageData.cacheHitRate}%
+                      </Text>
+                    </BlockStack>
+
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" tone="subdued">
+                        Cached
+                      </Text>
+                      <Text variant="headingLg" as="h3">
+                        {usageData.cached}
+                      </Text>
+                    </BlockStack>
+
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" tone="subdued">
+                        Uncached
+                      </Text>
+                      <Text variant="headingLg" as="h3">
+                        {usageData.uncached}
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+
+                  <div style={{ 
+                    height: '200px', 
+                    background: 'linear-gradient(180deg, #E3F2FD 0%, #BBDEFB 100%)',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Icon source={ChartVerticalIcon} tone="base" />
+                    <Text variant="bodyMd" tone="subdued">
+                      Chart placeholder
+                    </Text>
+                  </div>
+                </BlockStack>
+              </Card>
+
+              {/* Kombin Yönetimi */}
+              <Card>
+                <BlockStack gap="400">
+                  <Text variant="headingMd" as="h2">
+                    🎨 Outfit Management
+                  </Text>
+
+                  <InlineStack gap="400">
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" tone="subdued">
+                        Active Outfits
+                      </Text>
+                      <Text variant="headingLg" as="h3">
+                        {loaderData.outfitCount}
+                      </Text>
+                    </BlockStack>
+
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" tone="subdued">
+                        Total Outfits
+                      </Text>
+                      <Text variant="headingLg" as="h3">
+                        {loaderData.totalOutfits}
+                      </Text>
+                    </BlockStack>
+
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" tone="subdued">
+                        Products in Outfits
+                      </Text>
+                      <Text variant="headingLg" as="h3">
+                        {loaderData.totalProducts}
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+
+                  <InlineStack gap="300">
                     <Button 
                       variant="primary"
                       onClick={() => navigate("/app/outfits/new")}
                     >
-                      ➕ Yeni Kombin Oluştur
+                      Create New Outfit
                     </Button>
                     
                     <Button onClick={() => navigate("/app/outfits")}>
-                      📋 Tüm Kombinleri Gör ({loaderData.totalOutfits})
+                      View All Outfits
                     </Button>
                   </InlineStack>
                 </BlockStack>
-
-                <Box
-                  padding="400"
-                  background="bg-surface-secondary"
-                  borderRadius="200"
-                >
-                  <BlockStack gap="200">
-                    <Text as="h3" variant="headingMd">
-                      🧪 Test Modu
-                    </Text>
-                    <Text as="p" variant="bodyMd">
-                      Uygulamayı test etmek için örnek bir ürün oluşturun.
-                    </Text>
-                    
-                    <InlineStack gap="300">
-                      <Button loading={isLoading} onClick={generateProduct}>
-                        Test Ürünü Oluştur
-                      </Button>
-                      {fetcher.data?.product && (
-                        <Button
-                          url={`shopify:admin/products/${productId}`}
-                          target="_blank"
-                          variant="plain"
-                        >
-                          Ürünü Görüntüle
-                        </Button>
-                      )}
-                    </InlineStack>
-                    
-                    {fetcher.data?.product && (
-                      <Box
-                        padding="400"
-                        background="bg-surface-success"
-                        borderWidth="025"
-                        borderRadius="200"
-                        borderColor="border-success"
-                      >
-                        <Text as="p" variant="bodyMd">
-                          ✅ Başarılı: {fetcher.data.product.title} oluşturuldu
-                        </Text>
-                      </Box>
-                    )}
-                  </BlockStack>
-                </Box>
-              </BlockStack>
-            </Card>
+              </Card>
+            </BlockStack>
           </Layout.Section>
-          
+
+          {/* Sağ Kolon - Ayarlar & Konfigürasyon */}
           <Layout.Section variant="oneThird">
-            <BlockStack gap="500">
+            <BlockStack gap="400">
+              {/* Theme Extension */}
               <Card>
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    📊 İstatistikler
+                <BlockStack gap="300">
+                  <InlineStack align="space-between" blockAlign="center">
+                    <InlineStack gap="200" blockAlign="center">
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        background: '#4ADE80',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Icon source={CheckIcon} tone="base" />
+                      </div>
+                      <Text variant="headingSm" as="h3">
+                        Theme extension
+                      </Text>
+                    </InlineStack>
+                    <Badge tone="success">Active</Badge>
+                  </InlineStack>
+
+                  <Text variant="bodySm" tone="subdued">
+                    The Virtual Try-On section is currently added to the product template.
                   </Text>
-                  <BlockStack gap="300">
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Aktif Kombin
-                      </Text>
-                      <Text as="span" variant="headingMd" fontWeight="bold">
-                        {loaderData.outfitCount}
-                      </Text>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Toplam Kombin
-                      </Text>
-                      <Text as="span" variant="headingMd" fontWeight="bold">
-                        {loaderData.totalOutfits}
-                      </Text>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Kombindeki Ürünler
-                      </Text>
-                      <Text as="span" variant="headingMd" fontWeight="bold">
-                        {loaderData.totalProducts}
-                      </Text>
-                    </InlineStack>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-              
-              <Card>
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    🚀 Hızlı Başlangıç
-                  </Text>
-                  <List>
-                    <List.Item>
-                      İlk kombinizi oluşturun
-                    </List.Item>
-                    <List.Item>
-                      Ürün sayfalarında widget'ı test edin
-                    </List.Item>
-                    <List.Item>
-                      AI görüntü işleme ayarlarını yapılandırın
-                    </List.Item>
-                    <List.Item>
-                      Tema renklerini özelleştirin
-                    </List.Item>
-                  </List>
+
+                  <Button onClick={() => navigate("/app/theme")}>
+                    Manage
+                  </Button>
                 </BlockStack>
               </Card>
 
+              {/* Models */}
               <Card>
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    ℹ️ Sistem Bilgisi
+                <BlockStack gap="300">
+                  <InlineStack align="space-between" blockAlign="center">
+                    <InlineStack gap="200" blockAlign="center">
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        background: '#E0E7FF',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Icon source={ImageIcon} tone="base" />
+                      </div>
+                      <Text variant="headingSm" as="h3">
+                        Models
+                      </Text>
+                    </InlineStack>
+                    <Badge tone="info">10 active</Badge>
+                  </InlineStack>
+
+                  <Text variant="bodySm" tone="subdued">
+                    Manage default and custom model images.
                   </Text>
-                  <Text variant="bodySm" as="p" tone="subdued">
-                    Version: 1.0.0
+
+                  <Button onClick={() => navigate("/app/models")}>
+                    Manage
+                  </Button>
+                </BlockStack>
+              </Card>
+
+              {/* Settings */}
+              <Card>
+                <BlockStack gap="300">
+                  <InlineStack align="space-between" blockAlign="center">
+                    <InlineStack gap="200" blockAlign="center">
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        background: '#FEF3C7',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Icon source={SettingsIcon} tone="base" />
+                      </div>
+                      <Text variant="headingSm" as="h3">
+                        Settings
+                      </Text>
+                    </InlineStack>
+                    <Badge tone="success">Configured</Badge>
+                  </InlineStack>
+
+                  <Text variant="bodySm" tone="subdued">
+                    Manage caching and app preferences.
                   </Text>
-                  <Text variant="bodySm" as="p" tone="subdued">
-                    Status: Active
+
+                  <Button onClick={() => navigate("/app/settings")}>
+                    Manage
+                  </Button>
+                </BlockStack>
+              </Card>
+
+              {/* Quick Stats */}
+              <Card>
+                <BlockStack gap="300">
+                  <Text variant="headingSm" as="h3">
+                    ⚡ Quick Stats
                   </Text>
-                  <Text variant="bodySm" as="p" tone="subdued">
-                    Last Updated: {new Date().toLocaleDateString('tr-TR')}
-                  </Text>
+
+                  <BlockStack gap="200">
+                    <InlineStack align="space-between">
+                      <Text variant="bodySm" tone="subdued">
+                        App Version
+                      </Text>
+                      <Text variant="bodySm" fontWeight="semibold">
+                        v1.0.0
+                      </Text>
+                    </InlineStack>
+
+                    <InlineStack align="space-between">
+                      <Text variant="bodySm" tone="subdued">
+                        Status
+                      </Text>
+                      <Badge tone="success">Active</Badge>
+                    </InlineStack>
+
+                    <InlineStack align="space-between">
+                      <Text variant="bodySm" tone="subdued">
+                        Last Updated
+                      </Text>
+                      <Text variant="bodySm">
+                        {new Date().toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </Text>
+                    </InlineStack>
+                  </BlockStack>
                 </BlockStack>
               </Card>
             </BlockStack>
