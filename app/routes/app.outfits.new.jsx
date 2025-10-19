@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useActionData, useSubmit, useLoaderData } from "react-router";
+import { redirect } from "react-router";
 import {
   Page,
   Layout,
@@ -74,10 +75,22 @@ export const action = async ({ request }) => {
   
   const name = formData.get("name");
   const description = formData.get("description");
-  const products = JSON.parse(formData.get("products"));
+  const productsRaw = formData.get("products");
 
-  if (!name || products.length === 0) {
-    return { error: "Kombin adı ve en az 1 ürün gerekli!" };
+  // Validation
+  if (!name || !productsRaw) {
+    return { error: "Kombin adı ve ürünler gerekli!" };
+  }
+
+  let products;
+  try {
+    products = JSON.parse(productsRaw);
+  } catch (e) {
+    return { error: "Ürün verisi geçersiz!" };
+  }
+
+  if (products.length === 0) {
+    return { error: "En az 1 ürün seçmelisiniz!" };
   }
 
   try {
@@ -85,7 +98,7 @@ export const action = async ({ request }) => {
       data: {
         shop: session.shop,
         name,
-        description,
+        description: description || "",
         mainProductId: products[0].id,
         active: true,
         products: {
@@ -100,8 +113,11 @@ export const action = async ({ request }) => {
       },
     });
 
-    return { success: true, outfit };
+    // ✅ Başarılı! Liste sayfasına yönlendir
+    return redirect("/app/outfits");
+    
   } catch (error) {
+    console.error("❌ Kombin kaydetme hatası:", error);
     return { error: "Kombin kaydedilemedi: " + error.message };
   }
 };
@@ -171,12 +187,6 @@ export default function NewOutfit() {
         {actionData?.error && (
           <Layout.Section>
             <Banner tone="critical">{actionData.error}</Banner>
-          </Layout.Section>
-        )}
-
-        {actionData?.success && (
-          <Layout.Section>
-            <Banner tone="success">Kombin başarıyla oluşturuldu! ✅</Banner>
           </Layout.Section>
         )}
 
