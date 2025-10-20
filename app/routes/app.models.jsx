@@ -16,7 +16,6 @@ import {
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-import { getCustomModels, uploadCustomModel, deleteCustomModel } from "../models/custom-model.server";
 
 // Default model görselleri
 const DEFAULT_MODELS = [
@@ -85,14 +84,10 @@ const DEFAULT_MODELS = [
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   
-  // Database'den custom modelleri çek
-  const customModels = await db.customModel.findMany({
-    where: { 
-      shop: session.shop,
-      active: true 
-    },
-    orderBy: { createdAt: 'desc' }
-  });
+  // Import server functions HERE (inside loader)
+  const { getCustomModels } = await import("../models/custom-model.server");
+  
+  const customModels = await getCustomModels(session.shop);
   
   return {
     shop: session.shop,
@@ -106,55 +101,45 @@ export const action = async ({ request }) => {
   const formData = await request.formData();
   const actionType = formData.get("action");
   
+  // Import server functions HERE (inside action)
+  const { uploadCustomModel, deleteCustomModel } = await import("../models/custom-model.server");
+  
   if (actionType === "upload") {
     const imageBase64 = formData.get("image");
-    const modelName = formData.get("name") || "Custom Model";
-    const gender = formData.get("gender") || "male";
+    const modelName = formData.get("name");
+    const gender = formData.get("gender");
     
     if (!imageBase64) {
       return { error: "No image provided" };
     }
     
-    // Cloudinary'ye yükle
-    const uploadResult = await uploadImage(imageBase64, `virtual-tryon/${session.shop}/models`);
-    
-    if (!uploadResult.success) {
-      return { error: uploadResult.error };
-    }
-    
-    // Database'e kaydet
-    await db.customModel.create({
-      data: {
+    try {
+      await uploadCustomModel({
         shop: session.shop,
+        imageBase64,
         name: modelName,
-        url: uploadResult.url,
-        cloudinaryId: uploadResult.publicId,
-        gender: gender,
-      }
-    });
-    
-    return { 
-      success: true, 
-      message: "Model uploaded successfully!",
-      url: uploadResult.url 
-    };
+        gender,
+      });
+      
+      return { 
+        success: true, 
+        message: "Model uploaded successfully!"
+      };
+    } catch (error) {
+      return { error: error.message };
+    }
   }
   
   if (actionType === "delete") {
     const modelId = formData.get("modelId");
     const cloudinaryId = formData.get("cloudinaryId");
     
-    // Cloudinary'den sil
-    if (cloudinaryId) {
-      await deleteImage(cloudinaryId);
+    try {
+      await deleteCustomModel(modelId, cloudinaryId);
+      return { success: true, message: "Model deleted successfully!" };
+    } catch (error) {
+      return { error: error.message };
     }
-    
-    // Database'den sil
-    await db.customModel.delete({
-      where: { id: modelId }
-    });
-    
-    return { success: true, message: "Model deleted successfully!" };
   }
   
   return { error: "Invalid action" };
