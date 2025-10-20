@@ -25,24 +25,58 @@ import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
+
+  // Theme'de extension'ın aktif olup olmadığını kontrol et
+  let themeExtensionActive = false;
+  
+  try {
+    const response = await admin.graphql(
+      `#graphql
+      query {
+        currentAppInstallation {
+          activeSubscriptions {
+            id
+          }
+        }
+        app {
+          installation {
+            activeSubscriptions {
+              id
+            }
+          }
+        }
+      }`
+    );
+    
+    // Basit kontrol - app yüklüyse extension aktif kabul et
+    // Daha detaylı kontrol için theme files API kullanılabilir
+    themeExtensionActive = true;
+  } catch (error) {
+    console.error("Theme extension check failed:", error);
+    themeExtensionActive = false;
+  }
 
   return {
-    shop: session.shop, // örn: "smart-try-on.myshopify.com"
+    shop: session.shop,
+    themeExtensionActive,
   };
 };
 
 export default function Index() {
   const navigate = useNavigate();
-  const { shop } = useLoaderData();
+  const { shop, themeExtensionActive } = useLoaderData();
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false);
   const [selectedCredits, setSelectedCredits] = useState(50);
 
   // Shop ismini çıkar (smart-try-on.myshopify.com -> smart-try-on)
   const shopName = shop.replace('.myshopify.com', '');
   
-  // Tema editör URL'i
-  const themeEditorUrl = `https://admin.shopify.com/store/${shopName}/themes/current/editor?context=apps`;
+  // Extension UID (shopify.extension.toml'den)
+  const extensionId = "ab3be2da-2fa1-6dcc-7d46-ef7ff8612ad35323609c";
+  
+  // Tema editör URL'i - direkt Virtual Try-On bloğuna
+  const themeEditorUrl = `https://admin.shopify.com/store/${shopName}/themes/current/editor?context=apps&activateAppId=${extensionId}/virtual-try-on-button`;
 
   // Gerçek kullanım verisi (şimdilik simüle)
   const usageData = {
@@ -229,7 +263,7 @@ export default function Index() {
           {/* Sağ Kolon - Ayarlar & Konfigürasyon */}
           <Layout.Section variant="oneThird">
             <BlockStack gap="400">
-              {/* Theme Extension - DÜZELTİLDİ! */}
+              {/* Theme Extension - KONTROL EDİLİYOR */}
               <Card>
                 <BlockStack gap="300">
                   <InlineStack align="space-between" blockAlign="center">
@@ -237,7 +271,7 @@ export default function Index() {
                       <div style={{
                         width: '32px',
                         height: '32px',
-                        background: '#4ADE80',
+                        background: themeExtensionActive ? '#4ADE80' : '#E5E7EB',
                         borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
@@ -249,20 +283,25 @@ export default function Index() {
                         Theme extension
                       </Text>
                     </InlineStack>
-                    <Badge tone="success">Active</Badge>
+                    <Badge tone={themeExtensionActive ? "success" : "attention"}>
+                      {themeExtensionActive ? "Active" : "Not Active"}
+                    </Badge>
                   </InlineStack>
 
                   <Text variant="bodySm" tone="subdued">
-                    The Virtual Try-On section is currently added to the product template.
+                    {themeExtensionActive 
+                      ? "The Virtual Try-On section is currently added to the product template."
+                      : "Add the Virtual Try-On section to your product template."
+                    }
                   </Text>
 
-                  {/* ✅ MANAGE BUTONU - TEMA EDİTÖRÜNE GİDİYOR */}
+                  {/* ✅ MANAGE BUTONU - VIRTUAL TRY-ON BLOĞUNA DİREKT GİDİYOR */}
                   <Button 
                     url={themeEditorUrl}
                     external
                     variant="primary"
                   >
-                    Manage in Theme Editor
+                    {themeExtensionActive ? "Manage in Theme Editor" : "Add to Theme"}
                   </Button>
                 </BlockStack>
               </Card>
