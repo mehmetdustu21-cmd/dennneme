@@ -17,66 +17,66 @@ import {
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
-// Default model görselleri
+// Default model görselleri (public/models/ klasöründen)
 const DEFAULT_MODELS = [
   {
-    id: "model-1",
-    name: "Male Model 1",
-    url: "https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=400&h=600&fit=crop",
+    id: "male-1",
+    name: "Michael",
+    url: "/models/male-1.png",
     gender: "male"
   },
   {
-    id: "model-2",
-    name: "Male Model 2",
-    url: "https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=400&h=600&fit=crop",
+    id: "male-2",
+    name: "James",
+    url: "/models/male-2.png",
     gender: "male"
   },
   {
-    id: "model-3",
-    name: "Male Model 3",
-    url: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400&h=600&fit=crop",
+    id: "male-3",
+    name: "David",
+    url: "/models/male-3.png",
     gender: "male"
   },
   {
-    id: "model-4",
-    name: "Male Model 4",
-    url: "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=400&h=600&fit=crop",
+    id: "male-4",
+    name: "Ryan",
+    url: "/models/male-4.png",
     gender: "male"
   },
   {
-    id: "model-5",
-    name: "Male Model 5",
-    url: "https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=400&h=600&fit=crop",
+    id: "male-5",
+    name: "Alex",
+    url: "/models/male-5.png",
     gender: "male"
   },
   {
-    id: "model-6",
-    name: "Female Model 1",
-    url: "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=400&h=600&fit=crop",
+    id: "female-1",
+    name: "Emma",
+    url: "/models/female-1.png",
     gender: "female"
   },
   {
-    id: "model-7",
-    name: "Female Model 2",
-    url: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=600&fit=crop",
+    id: "female-2",
+    name: "Sophia",
+    url: "/models/female-2.png",
     gender: "female"
   },
   {
-    id: "model-8",
-    name: "Female Model 3",
-    url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=600&fit=crop",
+    id: "female-3",
+    name: "Olivia",
+    url: "/models/female-3.png",
     gender: "female"
   },
   {
-    id: "model-9",
-    name: "Female Model 4",
-    url: "https://images.unsplash.com/photo-1518644961665-ed172691aaa1?w=400&h=600&fit=crop",
+    id: "female-4",
+    name: "Isabella",
+    url: "/models/female-4.png",
     gender: "female"
   },
   {
-    id: "model-10",
-    name: "Female Model 5",
-    url: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=600&fit=crop",
+    id: "female-5",
+    name: "Ava",
+    url: "/models/female-5.png",
     gender: "female"
   }
 ];
