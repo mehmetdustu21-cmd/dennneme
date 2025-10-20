@@ -21,7 +21,7 @@ import {
   ChartVerticalIcon,
   AlertTriangleIcon
 } from "@shopify/polaris-icons";
-import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
+import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
@@ -106,26 +106,13 @@ export default function Index() {
   // Extension UID (shopify.extension.toml'den)
   const extensionId = "ab3be2da-2fa1-6dcc-7d46-ef7ff8612ad35323609c";
   
-  // Otomatik kurulum fonksiyonu
-  const handleSetupWidget = useCallback(async () => {
-    try {
-      // App Bridge ile tema editörünü aç
-      await shopify.saveBar.hide();
-      
-      // Redirect to theme editor with app block
-      const editorUrl = themeId && productPageUrl
-        ? `/themes/${themeId}/editor?context=apps&template=product&activateAppId=${extensionId}/virtual-try-on-button`
-        : `/themes/current/editor?context=apps&template=product&activateAppId=${extensionId}/virtual-try-on-button`;
-      
-      // Shopify admin'e yönlendir
-      window.open(
-        `https://admin.shopify.com/store/${shopName}${editorUrl}`,
-        '_blank'
-      );
-    } catch (error) {
-      console.error('Setup error:', error);
-    }
-  }, [shopify, shopName, themeId, productPageUrl, extensionId]);
+  // Otomatik kurulum fonksiyonu - BASİT VERSİYON
+  const handleSetupWidget = useCallback(() => {
+    const editorUrl = `https://admin.shopify.com/store/${shopName}/themes/current/editor?context=apps&template=product&activateAppId=${extensionId}/virtual-try-on-button`;
+    
+    console.log('🚀 Opening theme editor:', editorUrl);
+    window.open(editorUrl, '_blank');
+  }, [shopName, extensionId]);
 
   // Gerçek kullanım verisi (şimdilik simüle)
   const usageData = {
