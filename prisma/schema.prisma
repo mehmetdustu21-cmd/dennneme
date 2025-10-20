@@ -1,3 +1,4 @@
+// Prisma Schema - Virtual Try-On App
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,7 +8,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Sadece Shopify Session (zorunlu)
+// Session tablosu (Shopify OAuth için gerekli)
 model Session {
   id            String    @id
   shop          String
@@ -24,4 +25,112 @@ model Session {
   locale        String?
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
+}
+
+// Shop bilgileri ve krediler
+model Shop {
+  id                String   @id @default(cuid())
+  shop              String   @unique // example.myshopify.com
+  
+  // Subscription & Credits
+  plan              String   @default("free") // free, basic, pro, enterprise
+  credits           Int      @default(0)
+  totalCreditsUsed  Int      @default(0)
+  
+  // Subscription details
+  subscriptionId    String?  // Shopify recurring charge ID
+  planPrice         Decimal? @db.Decimal(10, 2)
+  billingCycle      String?  // monthly, annual
+  trialEndsAt       DateTime?
+  
+  // App settings
+  active            Boolean  @default(true)
+  installedAt       DateTime @default(now())
+  uninstalledAt     DateTime?
+  
+  // Metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  generations       Generation[]
+  creditPurchases   CreditPurchase[]
+  
+  @@index([shop])
+}
+
+// Virtual Try-On Generations (API kullanımları)
+model Generation {
+  id              String   @id @default(cuid())
+  shopId          String
+  shop            Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  
+  // Customer & Product info
+  customerId      String?  // Shopify customer ID (optional)
+  productId       String   // Shopify product ID
+  variantId       String?  // Shopify variant ID
+  
+  // Generation details
+  status          String   @default("pending") // pending, processing, completed, failed
+  customerImage   String   // URL of customer's uploaded photo
+  resultImage     String?  // URL of generated try-on result
+  
+  // API details
+  apiProvider     String   @default("fal") // fal, replicate, etc.
+  apiCost         Decimal  @db.Decimal(10, 4) // Cost per generation ($0.05)
+  creditsUsed     Int      @default(1)
+  
+  // Error handling
+  errorMessage    String?
+  retryCount      Int      @default(0)
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+  
+  @@index([shopId])
+  @@index([productId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Credit purchases (one-time buys)
+model CreditPurchase {
+  id              String   @id @default(cuid())
+  shopId          String
+  shop            Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  
+  // Purchase details
+  amount          Decimal  @db.Decimal(10, 2) // Amount paid ($10, $50, etc.)
+  credits         Int      // Credits purchased
+  pricePerCredit  Decimal  @db.Decimal(10, 4) // Effective price per credit
+  
+  // Shopify billing
+  chargeId        String?  @unique // Shopify one-time charge ID
+  status          String   @default("pending") // pending, accepted, declined
+  
+  // Metadata
+  createdAt       DateTime @default(now())
+  paidAt          DateTime?
+  
+  @@index([shopId])
+  @@index([status])
+}
+
+// Custom model images uploaded by merchants
+model CustomModel {
+  id              String   @id @default(cuid())
+  shop            String
+  
+  // Model details
+  name            String
+  url             String   // Cloudinary URL
+  cloudinaryId    String   // For deletion
+  gender          String   @default("male") // male, female, unisex
+  
+  // Metadata
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  
+  @@index([shop])
 }
