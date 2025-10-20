@@ -1,574 +1,573 @@
 {% comment %}
-  Virtual Try-On Widget - With Real Models
+  Virtual Try-On Widget - With Real Models
 {% endcomment %}
 
 <style>
-  .vto-container {
-    min-height: 100vh;
-    background: #f9fafb;
-    padding: 24px;
-  }
+  .vto-container {
+    min-height: 100vh;
+    background: #f9fafb;
+    padding: 24px;
+  }
 
-  .vto-wrapper {
-    max-width: 1280px;
-    margin: 0 auto;
-  }
+  .vto-wrapper {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
 
-  .vto-header {
-    text-align: center;
-    margin-bottom: 40px;
-  }
+  .vto-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
 
-  .vto-title {
-    font-size: 48px;
-    font-weight: bold;
-    color: #111827;
-    margin-bottom: 12px;
-    letter-spacing: -1px;
-  }
+  .vto-title {
+    font-size: 48px;
+    font-weight: bold;
+    color: #111827;
+    margin-bottom: 12px;
+    letter-spacing: -1px;
+  }
 
-  .vto-subtitle {
-    font-size: 16px;
-    color: #6b7280;
-    max-width: 600px;
-    margin: 0 auto;
-  }
+  .vto-subtitle {
+    font-size: 16px;
+    color: #6b7280;
+    max-width: 600px;
+    margin: 0 auto;
+  }
 
-  .vto-notice {
-    font-size: 13px;
-    font-style: italic;
-    color: #9ca3af;
-    margin-top: 8px;
-  }
+  .vto-notice {
+    font-size: 13px;
+    font-style: italic;
+    color: #9ca3af;
+    margin-top: 8px;
+  }
 
-  .vto-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-  }
+  .vto-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
 
-  .vto-panel {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    padding: 24px;
-  }
+  .vto-panel {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 24px;
+  }
 
-  .vto-panel-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
+  .vto-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
 
-  .vto-panel-icon {
-    width: 24px;
-    height: 24px;
-    color: #111827;
-  }
+  .vto-panel-icon {
+    width: 24px;
+    height: 24px;
+    color: #111827;
+  }
 
-  .vto-panel-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: #111827;
-  }
+  .vto-panel-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #111827;
+  }
 
-  .vto-section-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 12px;
-  }
+  .vto-section-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 12px;
+  }
 
-  .vto-model-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 24px;
-  }
+  .vto-model-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
 
-  .vto-upload-card {
-    aspect-ratio: 2/3;
-    border-radius: 8px;
-    border: 2px dashed #d1d5db;
-    background: #f9fafb;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    position: relative;
-  }
+  .vto-upload-card {
+    aspect-ratio: 2/3;
+    border-radius: 8px;
+    border: 2px dashed #d1d5db;
+    background: #f9fafb;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+  }
 
-  .vto-upload-card:hover {
-    border-color: #0d6efd;
-    background: #eff6ff;
-  }
+  .vto-upload-card:hover {
+    border-color: #0d6efd;
+    background: #eff6ff;
+  }
 
-  .vto-upload-card svg {
-    width: 32px;
-    height: 32px;
-    color: #9ca3af;
-  }
+  .vto-upload-card svg {
+    width: 32px;
+    height: 32px;
+    color: #9ca3af;
+  }
 
-  .vto-upload-card:hover svg {
-    color: #0d6efd;
-  }
+  .vto-upload-card:hover svg {
+    color: #0d6efd;
+  }
 
-  .vto-upload-card span {
-    font-size: 12px;
-    font-weight: 500;
-    color: #6b7280;
-  }
+  .vto-upload-card span {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+  }
 
-  .vto-upload-card:hover span {
-    color: #0d6efd;
-  }
+  .vto-upload-card:hover span {
+    color: #0d6efd;
+  }
 
-  .vto-upload-card.has-image {
-    border: 2px solid #0d6efd;
-    background: transparent;
-  }
+  .vto-upload-card.has-image {
+    border: 2px solid #0d6efd;
+    background: transparent;
+  }
 
-  .vto-upload-card.has-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 6px;
-  }
+  .vto-upload-card.has-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+  }
 
-  .vto-item {
-    aspect-ratio: 2/3;
-    border-radius: 8px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    border: 2px solid transparent;
-  }
+  .vto-item {
+    aspect-ratio: 2/3;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    border: 2px solid transparent;
+  }
 
-  .vto-item:hover {
-    transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  }
+  .vto-item:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
 
-  .vto-item.selected {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #0d6efd;
-  }
+  .vto-item.selected {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #0d6efd;
+  }
 
-  .vto-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  .vto-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 
-  .vto-item-label {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(transparent, rgba(0,0,0,0.7));
-    color: white;
-    font-size: 12px;
-    font-weight: 500;
-    padding: 12px 8px 8px;
-  }
+  .vto-item-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 12px 8px 8px;
+  }
 
-  .vto-item-badge {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
+  .vto-item-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
 
-  .vto-badge-male {
-    background: #3b82f6;
-    color: white;
-  }
+  .vto-badge-male {
+    background: #3b82f6;
+    color: white;
+  }
 
-  .vto-badge-female {
-    background: #ec4899;
-    color: white;
-  }
+  .vto-badge-female {
+    background: #ec4899;
+    color: white;
+  }
 
-  .vto-preview {
-    aspect-ratio: 3/4;
-    background: #f3f4f6;
-    border-radius: 12px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-  }
+  .vto-preview {
+    aspect-ratio: 3/4;
+    background: #f3f4f6;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
 
-  .vto-preview-placeholder {
-    text-align: center;
-    color: #9ca3af;
-  }
+  .vto-preview-placeholder {
+    text-align: center;
+    color: #9ca3af;
+  }
 
-  .vto-preview-placeholder svg {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 12px;
-  }
+  .vto-preview-placeholder svg {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 12px;
+  }
 
-  .vto-slider-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-  }
+  .vto-slider-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
 
-  .vto-before, .vto-after {
-    position: absolute;
-    inset: 0;
-  }
+  .vto-before, .vto-after {
+    position: absolute;
+    inset: 0;
+  }
 
-  .vto-before img, .vto-after img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  .vto-before img, .vto-after img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 
-  .vto-slider-divider {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: white;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    cursor: ew-resize;
-    z-index: 10;
-  }
+  .vto-slider-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    cursor: ew-resize;
+    z-index: 10;
+  }
 
-  .vto-slider-handle {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 40px;
-    height: 40px;
-    background: white;
-    border-radius: 50%;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  .vto-slider-handle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-  .vto-badge {
-    position: absolute;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-  }
+  .vto-badge {
+    position: absolute;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
 
-  .vto-badge-before {
-    top: 16px;
-    left: 16px;
-    background: rgba(0,0,0,0.7);
-    color: white;
-  }
+  .vto-badge-before {
+    top: 16px;
+    left: 16px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+  }
 
-  .vto-badge-after {
-    top: 16px;
-    right: 16px;
-    background: #0d6efd;
-    color: white;
-  }
+  .vto-badge-after {
+    top: 16px;
+    right: 16px;
+    background: #0d6efd;
+    color: white;
+  }
 
-  .vto-generate-btn {
-    width: 100%;
-    padding: 16px 24px;
-    background: #0d6efd;
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.2s;
-  }
+  .vto-generate-btn {
+    width: 100%;
+    padding: 16px 24px;
+    background: #0d6efd;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+  }
 
-  .vto-generate-btn:hover:not(:disabled) {
-    background: #0b5ed7;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-  }
+  .vto-generate-btn:hover:not(:disabled) {
+    background: #0b5ed7;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+  }
 
-  .vto-generate-btn:disabled {
-    background: #e5e7eb;
-    color: #9ca3af;
-    cursor: not-allowed;
-  }
+  .vto-generate-btn:disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+  }
 
-  @media (max-width: 1024px) {
-    .vto-grid {
-      grid-template-columns: 1fr;
-    }
-    .vto-model-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
+  @media (max-width: 1024px) {
+    .vto-grid {
+      grid-template-columns: 1fr;
+    }
+    .vto-model-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
 
-  @media (max-width: 640px) {
-    .vto-model-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
+  @media (max-width: 640px) {
+    .vto-model-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
 </style>
 
 <div class="vto-container">
-  <div class="vto-wrapper">
-    
-    <!-- Header -->
-    <div class="vto-header">
-      <h1 class="vto-title">TRY IT ON</h1>
-      <p class="vto-subtitle">
-        Build your perfect outfit and see it come to life. Try styles on our models
-        or on yourself, mix and match looks, and add your favorites to the cart.
-      </p>
-      <p class="vto-notice">
-        Note: The preview is AI-generated and may not be 100% accurate. No customer data is stored.
-      </p>
-    </div>
+  <div class="vto-wrapper">
+    
+        <div class="vto-header">
+      <h1 class="vto-title">TRY IT ON</h1>
+      <p class="vto-subtitle">
+        Build your perfect outfit and see it come to life. Try styles on our models
+        or on yourself, mix and match looks, and add your favorites to the cart.
+      </p>
+      <p class="vto-notice">
+        Note: The preview is AI-generated and may not be 100% accurate. No customer data is stored.
+      </p>
+    </div>
 
-    <input type="file" id="vto-upload-hidden" accept="image/*" style="display: none;">
+    <input type="file" id="vto-upload-hidden" accept="image/*" style="display: none;">
 
-    <div class="vto-grid">
+    <div class="vto-grid">
 
-      <!-- Browse Panel -->
-      <div class="vto-panel">
-        <div class="vto-panel-header">
-          <svg class="vto-panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-          </svg>
-          <h2 class="vto-panel-title">Browse</h2>
-        </div>
+            <div class="vto-panel">
+        <div class="vto-panel-header">
+          <svg class="vto-panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <h2 class="vto-panel-title">Browse</h2>
+        </div>
 
-        <!-- Models -->
-        <div>
-          <h3 class="vto-section-title">Select Model</h3>
-          <div class="vto-model-grid" id="vto-models"></div>
-        </div>
-      </div>
+                <div>
+          <h3 class="vto-section-title">Select Model</h3>
+          <div class="vto-model-grid" id="vto-models"></div>
+        </div>
+      </div>
 
-      <!-- Result Panel -->
-      <div class="vto-panel">
-        <div class="vto-panel-header">
-          <svg class="vto-panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-          </svg>
-          <h2 class="vto-panel-title">Result</h2>
-        </div>
+            <div class="vto-panel">
+        <div class="vto-panel-header">
+          <svg class="vto-panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+          </svg>
+          <h2 class="vto-panel-title">Result</h2>
+        </div>
 
-        <div class="vto-preview" id="vto-preview">
-          <div class="vto-preview-placeholder">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-            </svg>
-            <p style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">Ready to Generate</p>
-            <p style="font-size: 14px;">Select a model and click generate below</p>
-          </div>
-        </div>
+        <div class="vto-preview" id="vto-preview">
+          <div class="vto-preview-placeholder">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+            </svg>
+            <p style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">Ready to Generate</p>
+            <p style="font-size: 14px;">Select a model and click generate below</p>
+          </div>
+        </div>
 
-        <button class="vto-generate-btn" id="vto-generate" disabled>
-          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-          </svg>
-          Generate Preview
-        </button>
-      </div>
+        <button class="vto-generate-btn" id="vto-generate" disabled>
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+          </svg>
+          Generate Preview
+        </button>
+      </div>
 
-    </div>
-  </div>
+    </div>
+  </div>
 </div>
 
 <script>
 (function() {
-  // Get shop domain
-  const shopDomain = window.location.hostname;
-  
-  // Construct app proxy URL
-  const proxyBase = `https://${shopDomain}/apps/virtual-tryon`;
-  
-  // Real models from app
-  const models = [
-    { id: 'male-1', name: 'Michael', image: `${proxyBase}/models/male-1.png`, gender: 'male' },
-    { id: 'male-2', name: 'James', image: `${proxyBase}/models/male-2.png`, gender: 'male' },
-    { id: 'male-3', name: 'David', image: `${proxyBase}/models/male-3.png`, gender: 'male' },
-    { id: 'male-4', name: 'Ryan', image: `${proxyBase}/models/male-4.png`, gender: 'male' },
-    { id: 'male-5', name: 'Alex', image: `${proxyBase}/models/male-5.png`, gender: 'male' },
-    { id: 'female-1', name: 'Emma', image: `${proxyBase}/models/female-1.png`, gender: 'female' },
-    { id: 'female-2', name: 'Sophia', image: `${proxyBase}/models/female-2.png`, gender: 'female' },
-    { id: 'female-3', name: 'Olivia', image: `${proxyBase}/models/female-3.png`, gender: 'female' },
-    { id: 'female-4', name: 'Isabella', image: `${proxyBase}/models/female-4.png`, gender: 'female' },
-    { id: 'female-5', name: 'Ava', image: `${proxyBase}/models/female-5.png`, gender: 'female' }
-  ];
+  // Get shop domain
+  const shopDomain = window.location.hostname;
+  
+  // Construct app proxy URL
+  // App Proxy URL: https://[shopDomain]/apps/virtual-tryon
+  const proxyBase = `https://${shopDomain}/apps/virtual-tryon`;
+  
+  // Real models from app - GÖRSEL SORUNUNU ÇÖZEN DOĞRU URL YAPISI BURADADIR.
+  const models = [
+    { id: 'male-1', name: 'Michael', image: `${proxyBase}/models/male-1.png`, gender: 'male' },
+    { id: 'male-2', name: 'James', image: `${proxyBase}/models/male-2.png`, gender: 'male' },
+    { id: 'male-3', name: 'David', image: `${proxyBase}/models/male-3.png`, gender: 'male' },
+    { id: 'male-4', name: 'Ryan', image: `${proxyBase}/models/male-4.png`, gender: 'male' },
+    { id: 'male-5', name: 'Alex', image: `${proxyBase}/models/male-5.png`, gender: 'male' },
+    { id: 'female-1', name: 'Emma', image: `${proxyBase}/models/female-1.png`, gender: 'female' },
+    { id: 'female-2', name: 'Sophia', image: `${proxyBase}/models/female-2.png`, gender: 'female' },
+    { id: 'female-3', name: 'Olivia', image: `${proxyBase}/models/female-3.png`, gender: 'female' },
+    { id: 'female-4', name: 'Isabella', image: `${proxyBase}/models/female-4.png`, gender: 'female' },
+    { id: 'female-5', name: 'Ava', image: `${proxyBase}/models/female-5.png`, gender: 'female' }
+  ];
 
-  let selectedModel = null;
-  let uploadedPhoto = null;
-  let sliderPosition = 50;
+  let selectedModel = null;
+  let uploadedPhoto = null;
+  let sliderPosition = 50;
 
-  // Render models grid
-  const modelsGrid = document.getElementById('vto-models');
+  // Render models grid
+  const modelsGrid = document.getElementById('vto-models');
 
-  // Upload card
-  const uploadCard = document.createElement('div');
-  uploadCard.className = 'vto-upload-card';
-  uploadCard.id = 'vto-upload-card';
-  uploadCard.innerHTML = `
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-    </svg>
-    <span>Upload<br>Your Photo</span>
-  `;
-  uploadCard.onclick = () => document.getElementById('vto-upload-hidden').click();
-  modelsGrid.appendChild(uploadCard);
+  // Upload card
+  const uploadCard = document.createElement('div');
+  uploadCard.className = 'vto-upload-card';
+  uploadCard.id = 'vto-upload-card';
+  uploadCard.innerHTML = `
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+    </svg>
+    <span>Upload<br>Your Photo</span>
+  `;
+  uploadCard.onclick = () => document.getElementById('vto-upload-hidden').click();
+  modelsGrid.appendChild(uploadCard);
 
-  // Render models
-  models.forEach(model => {
-    const div = document.createElement('div');
-    div.className = 'vto-item';
-    div.innerHTML = `
-      <img src="${model.image}" alt="${model.name}">
-      <div class="vto-item-badge vto-badge-${model.gender}">${model.gender === 'male' ? 'M' : 'F'}</div>
-      <div class="vto-item-label">${model.name}</div>
-    `;
-    div.onclick = () => selectModel(model, div);
-    modelsGrid.appendChild(div);
-  });
+  // Render models
+  models.forEach(model => {
+    const div = document.createElement('div');
+    div.className = 'vto-item';
+    div.innerHTML = `
+      <img src="${model.image}" alt="${model.name}">
+      <div class="vto-item-badge vto-badge-${model.gender}">${model.gender === 'male' ? 'M' : 'F'}</div>
+      <div class="vto-item-label">${model.name}</div>
+    `;
+    div.onclick = () => selectModel(model, div);
+    modelsGrid.appendChild(div);
+  });
 
-  function selectModel(model, element) {
-    document.querySelectorAll('.vto-model-grid .vto-item').forEach(el => el.classList.remove('selected'));
-    element.classList.add('selected');
-    selectedModel = model;
-    uploadedPhoto = null;
-    
-    // Reset upload card
-    const card = document.getElementById('vto-upload-card');
-    card.className = 'vto-upload-card';
-    card.innerHTML = `
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-      </svg>
-      <span>Upload<br>Your Photo</span>
-    `;
-    
-    updateGenerateButton();
-  }
+  function selectModel(model, element) {
+    document.querySelectorAll('.vto-model-grid .vto-item').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedModel = model;
+    uploadedPhoto = null;
+    
+    // Reset upload card
+    const card = document.getElementById('vto-upload-card');
+    card.className = 'vto-upload-card';
+    card.innerHTML = `
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+      </svg>
+      <span>Upload<br>Your Photo</span>
+    `;
+    
+    updateGenerateButton();
+  }
 
-  document.getElementById('vto-upload-hidden').onchange = function(e) {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        uploadedPhoto = event.target.result;
-        const card = document.getElementById('vto-upload-card');
-        card.className = 'vto-upload-card has-image selected';
-        card.innerHTML = `<img src="${uploadedPhoto}" alt="Your photo">`;
-        
-        document.querySelectorAll('.vto-model-grid .vto-item').forEach(el => el.classList.remove('selected'));
-        selectedModel = null;
-        updateGenerateButton();
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  document.getElementById('vto-upload-hidden').onchange = function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        uploadedPhoto = event.target.result;
+        const card = document.getElementById('vto-upload-card');
+        card.className = 'vto-upload-card has-image selected';
+        card.innerHTML = `<img src="${uploadedPhoto}" alt="Your photo">`;
+        
+        document.querySelectorAll('.vto-model-grid .vto-item').forEach(el => el.classList.remove('selected'));
+        selectedModel = null;
+        updateGenerateButton();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
-  function updateGenerateButton() {
-    const btn = document.getElementById('vto-generate');
-    btn.disabled = !(selectedModel || uploadedPhoto);
-  }
+  function updateGenerateButton() {
+    const btn = document.getElementById('vto-generate');
+    btn.disabled = !(selectedModel || uploadedPhoto);
+  }
 
-  document.getElementById('vto-generate').onclick = async function() {
-    const preview = document.getElementById('vto-preview');
-    const modelImage = uploadedPhoto || selectedModel?.image;
-    const outfitImage = '{{ product.featured_image | img_url: "large" }}';
+  document.getElementById('vto-generate').onclick = async function() {
+    const preview = document.getElementById('vto-preview');
+    const modelImage = uploadedPhoto || selectedModel?.image;
+    // Shopify'ın Liquid değişkenini kullanarak mevcut ürünün görselini al
+    const outfitImage = '{{ product.featured_image | img_url: "large" }}';
 
-    if (!modelImage) return;
+    if (!modelImage) return;
 
-    // Show loading
-    this.innerHTML = `
-      <svg class="animate-spin" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"></circle>
-        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"></path>
-      </svg>
-      Generating...
-    `;
-    this.disabled = true;
+    // Show loading
+    this.innerHTML = `
+      <svg class="animate-spin" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"></circle>
+        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"></path>
+      </svg>
+      Generating...
+    `;
+    this.disabled = true;
 
-    // Simulate API call (replace with real API later)
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Simulate API call (replace with real API later)
+    // BU KISIMDA ARTIK GERÇEK API ÇAĞRISI YAPILMALIDIR.
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    // Show before/after slider
-    preview.innerHTML = `
-      <div class="vto-slider-container">
-        <div class="vto-before">
-          <img src="${modelImage}" alt="Before">
-          <div class="vto-badge vto-badge-before">Before</div>
-        </div>
-        <div class="vto-after" style="clip-path: inset(0 ${100 - sliderPosition}% 0 0);">
-          <img src="${outfitImage}" alt="After">
-          <div class="vto-badge vto-badge-after">With Product</div>
-        </div>
-        <div class="vto-slider-divider" style="left: ${sliderPosition}%;">
-          <div class="vto-slider-handle">
-            <svg width="12" height="12" fill="none" stroke="#9ca3af" stroke-width="2">
-              <path d="M2 6h8M6 2l-4 4 4 4m0-8l4 4-4 4"/>
-            </svg>
-          </div>
-        </div>
-        <input type="range" min="0" max="100" value="${sliderPosition}"
-          style="position: absolute; inset: 0; opacity: 0; cursor: ew-resize; width: 100%; height: 100%;"
-          oninput="document.querySelector('.vto-after').style.clipPath = 'inset(0 ' + (100 - this.value) + '% 0 0)'; document.querySelector('.vto-slider-divider').style.left = this.value + '%';">
-      </div>
-    `;
+    // Show before/after slider
+    preview.innerHTML = `
+      <div class="vto-slider-container">
+        <div class="vto-before">
+          <img src="${modelImage}" alt="Before">
+          <div class="vto-badge vto-badge-before">Before</div>
+        </div>
+        <div class="vto-after" style="clip-path: inset(0 ${100 - sliderPosition}% 0 0);">
+          <img src="${outfitImage}" alt="After">
+          <div class="vto-badge vto-badge-after">With Product</div>
+        </div>
+        <div class="vto-slider-divider" style="left: ${sliderPosition}%;">
+          <div class="vto-slider-handle">
+            <svg width="12" height="12" fill="none" stroke="#9ca3af" stroke-width="2">
+              <path d="M2 6h8M6 2l-4 4 4 4m0-8l4 4-4 4"/>
+            </svg>
+          </div>
+        </div>
+        <input type="range" min="0" max="100" value="${sliderPosition}"
+          style="position: absolute; inset: 0; opacity: 0; cursor: ew-resize; width: 100%; height: 100%;"
+          oninput="document.querySelector('.vto-after').style.clipPath = 'inset(0 ' + (100 - this.value) + '% 0 0)'; document.querySelector('.vto-slider-divider').style.left = this.value + '%';">
+      </div>
+    `;
 
-    // Reset button
-    this.innerHTML = `
-      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-      </svg>
-      Regenerate
-    `;
-    this.disabled = false;
-  };
+    // Reset button
+    this.innerHTML = `
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+      </svg>
+      Regenerate
+    `;
+    this.disabled = false;
+  };
 })();
 </script>
 
 <style>
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  .animate-spin {
-    animation: spin 1s linear infinite;
-  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
 </style>
 
 {% schema %}
 {
-  "name": "Virtual Try-On",
-  "target": "section",
-  "settings": [],
-  "presets": [
-    {
-      "name": "Virtual Try-On"
-    }
-  ]
+  "name": "Virtual Try-On",
+  "target": "section",
+  "settings": [],
+  "presets": [
+    {
+      "name": "Virtual Try-On"
+    }
+  ]
 }
 {% endschema %}
