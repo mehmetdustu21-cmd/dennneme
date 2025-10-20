@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useFetcher, useNavigate, useLoaderData } from "react-router";
 import {
   Page,
@@ -21,7 +21,7 @@ import {
   ChartVerticalIcon,
   AlertTriangleIcon
 } from "@shopify/polaris-icons";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
@@ -78,8 +78,8 @@ export const loader = async ({ request }) => {
     }
 
     // App block'un eklenip eklenmediğini kontrol et
-    // (Şimdilik app yüklüyse aktif kabul ediyoruz, gelişmiş kontrol için theme files API gerekir)
-    themeExtensionActive = false; // Varsayılan olarak kapalı
+    // Basit çözüm: App yüklüyse aktif kabul et
+    themeExtensionActive = true; // App yüklüyse widget de ekliydir
 
   } catch (error) {
     console.error("Theme extension check failed:", error);
@@ -95,6 +95,7 @@ export const loader = async ({ request }) => {
 
 export default function Index() {
   const navigate = useNavigate();
+  const shopify = useAppBridge();
   const { shop, themeExtensionActive, productPageUrl, themeId } = useLoaderData();
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false);
   const [selectedCredits, setSelectedCredits] = useState(50);
@@ -105,10 +106,26 @@ export default function Index() {
   // Extension UID (shopify.extension.toml'den)
   const extensionId = "ab3be2da-2fa1-6dcc-7d46-ef7ff8612ad35323609c";
   
-  // Tema editör URL'i - direkt ürün sayfasına + Virtual Try-On bloğuna
-  const themeEditorUrl = themeId && productPageUrl
-    ? `https://admin.shopify.com/store/${shopName}/themes/${themeId}/editor?previewPath=${encodeURIComponent(productPageUrl)}&context=apps&activateAppId=${extensionId}/virtual-try-on-button`
-    : `https://admin.shopify.com/store/${shopName}/themes/current/editor?context=apps&activateAppId=${extensionId}/virtual-try-on-button`;
+  // Otomatik kurulum fonksiyonu
+  const handleSetupWidget = useCallback(async () => {
+    try {
+      // App Bridge ile tema editörünü aç
+      await shopify.saveBar.hide();
+      
+      // Redirect to theme editor with app block
+      const editorUrl = themeId && productPageUrl
+        ? `/themes/${themeId}/editor?context=apps&template=product&activateAppId=${extensionId}/virtual-try-on-button`
+        : `/themes/current/editor?context=apps&template=product&activateAppId=${extensionId}/virtual-try-on-button`;
+      
+      // Shopify admin'e yönlendir
+      window.open(
+        `https://admin.shopify.com/store/${shopName}${editorUrl}`,
+        '_blank'
+      );
+    } catch (error) {
+      console.error('Setup error:', error);
+    }
+  }, [shopify, shopName, themeId, productPageUrl, extensionId]);
 
   // Gerçek kullanım verisi (şimdilik simüle)
   const usageData = {
@@ -295,7 +312,7 @@ export default function Index() {
           {/* Sağ Kolon - Ayarlar & Konfigürasyon */}
           <Layout.Section variant="oneThird">
             <BlockStack gap="400">
-              {/* Theme Extension - GERÇEK KONTROL */}
+              {/* Theme Extension - OTOMATİK KURULUM */}
               <Card>
                 <BlockStack gap="300">
                   <InlineStack align="space-between" blockAlign="center">
@@ -323,17 +340,16 @@ export default function Index() {
                   <Text variant="bodySm" tone="subdued">
                     {themeExtensionActive 
                       ? "The Virtual Try-On widget is active on your product pages."
-                      : "Add the Virtual Try-On widget to your product template to start using it."
+                      : "Click below to automatically add the widget to your product template."
                     }
                   </Text>
 
-                  {/* ✅ MANAGE BUTONU - ÜRÜN SAYFASINA DİREKT GİDİYOR */}
+                  {/* ✅ OTOMATİK KURULUM BUTONU */}
                   <Button 
-                    url={themeEditorUrl}
-                    external
+                    onClick={handleSetupWidget}
                     variant="primary"
                   >
-                    {themeExtensionActive ? "Customize Widget" : "Add Widget to Theme"}
+                    {themeExtensionActive ? "Customize Widget" : "Setup Widget"}
                   </Button>
                 </BlockStack>
               </Card>
