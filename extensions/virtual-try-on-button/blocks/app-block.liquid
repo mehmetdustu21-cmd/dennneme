@@ -1,5 +1,6 @@
 {% comment %}
   Virtual Try-On Widget - With Real Models
+  Bu dosya, model görsellerini App Proxy üzerinden çekecek şekilde yapılandırılmıştır.
 {% endcomment %}
 
 <style>
@@ -394,7 +395,12 @@
   </div>
 </div>
 
-{% comment %} Schema parse hatasını gidermek için JS/CSS bloklarını yorum içine alıyoruz {% endcomment %}
+{% comment %} 
+    Schema parse hatasını gidermek için JavaScript ve CSS bloklarını
+    RAW etiketleri içine alıyoruz.
+{% endcomment %}
+
+{% raw %}
 <script>
 (function() {
   // Get shop domain
@@ -551,7 +557,6 @@
 })();
 </script>
 
-{% comment %} Schema parse hatasını gidermek için JS/CSS bloklarını yorum içine alıyoruz {% endcomment %}
 <style>
   @keyframes spin {
     to { transform: rotate(360deg); }
@@ -560,6 +565,7 @@
     animation: spin 1s linear infinite;
   }
 </style>
+{% endraw %}
 
 {% schema %}
 {
