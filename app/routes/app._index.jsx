@@ -14,7 +14,7 @@ import {
   Modal,
   Banner,
 } from "@shopify/polaris";
-import { 
+import {
   CheckIcon,
   ImageIcon,
   SettingsIcon,
@@ -23,44 +23,27 @@ import {
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-import db from "../db.server";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
-  
-  // Aktif kombin sayısı
-  const outfitCount = await db.outfit.count({
-    where: { shop: session.shop, active: true }
-  });
 
-  // Toplam ürün sayısı
-  const totalProducts = await db.outfitProduct.count({
-    where: {
-      outfit: {
-        shop: session.shop
-      }
-    }
-  });
-
-  // Toplam kombin sayısı
-  const totalOutfits = await db.outfit.count({
-    where: { shop: session.shop }
-  });
-
-  return { 
-    shop: session.shop,
-    outfitCount,
-    totalProducts,
-    totalOutfits
+  return {
+    shop: session.shop, // örn: "smart-try-on.myshopify.com"
   };
 };
 
 export default function Index() {
   const navigate = useNavigate();
-  const loaderData = useLoaderData();
+  const { shop } = useLoaderData();
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false);
   const [selectedCredits, setSelectedCredits] = useState(50);
+
+  // Shop ismini çıkar (smart-try-on.myshopify.com -> smart-try-on)
+  const shopName = shop.replace('.myshopify.com', '');
   
+  // Tema editör URL'i
+  const themeEditorUrl = `https://admin.shopify.com/store/${shopName}/themes/current/editor?context=apps`;
+
   // Gerçek kullanım verisi (şimdilik simüle)
   const usageData = {
     totalGenerations: 15,
@@ -87,7 +70,7 @@ export default function Index() {
     else if (credits >= 100) pricePerCredit = 0.20; // 20 cent
     else if (credits >= 50) pricePerCredit = 0.25; // 25 cent
     else pricePerCredit = 0.30; // 30 cent
-    
+
     return (credits * pricePerCredit).toFixed(2);
   };
 
@@ -101,7 +84,7 @@ export default function Index() {
   return (
     <Page>
       <TitleBar title="Dashboard" />
-      
+
       <BlockStack gap="500">
         <Layout>
           {/* Sol Kolon - Ana İçerik */}
@@ -141,8 +124,8 @@ export default function Index() {
                     </BlockStack>
                   </InlineStack>
 
-                  <ProgressBar 
-                    progress={creditsPercentage} 
+                  <ProgressBar
+                    progress={creditsPercentage}
                     tone={creditsPercentage > 80 ? "critical" : creditsPercentage > 60 ? "caution" : "primary"}
                   />
 
@@ -162,8 +145,8 @@ export default function Index() {
                   </Text>
 
                   <InlineStack gap="300">
-                    <Button 
-                      variant="primary" 
+                    <Button
+                      variant="primary"
                       onClick={() => navigate("/app/plans")}
                     >
                       View plans
@@ -225,8 +208,8 @@ export default function Index() {
                     </BlockStack>
                   </InlineStack>
 
-                  <div style={{ 
-                    height: '200px', 
+                  <div style={{
+                    height: '200px',
                     background: 'linear-gradient(180deg, #E3F2FD 0%, #BBDEFB 100%)',
                     borderRadius: '8px',
                     display: 'flex',
@@ -240,64 +223,13 @@ export default function Index() {
                   </div>
                 </BlockStack>
               </Card>
-
-              {/* Kombin Yönetimi */}
-              <Card>
-                <BlockStack gap="400">
-                  <Text variant="headingMd" as="h2">
-                    🎨 Outfit Management
-                  </Text>
-
-                  <InlineStack gap="400">
-                    <BlockStack gap="100">
-                      <Text variant="bodySm" tone="subdued">
-                        Active Outfits
-                      </Text>
-                      <Text variant="headingLg" as="h3">
-                        {loaderData.outfitCount}
-                      </Text>
-                    </BlockStack>
-
-                    <BlockStack gap="100">
-                      <Text variant="bodySm" tone="subdued">
-                        Total Outfits
-                      </Text>
-                      <Text variant="headingLg" as="h3">
-                        {loaderData.totalOutfits}
-                      </Text>
-                    </BlockStack>
-
-                    <BlockStack gap="100">
-                      <Text variant="bodySm" tone="subdued">
-                        Products in Outfits
-                      </Text>
-                      <Text variant="headingLg" as="h3">
-                        {loaderData.totalProducts}
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-
-                  <InlineStack gap="300">
-                    <Button 
-                      variant="primary"
-                      onClick={() => navigate("/app/outfits/new")}
-                    >
-                      Create New Outfit
-                    </Button>
-                    
-                    <Button onClick={() => navigate("/app/outfits")}>
-                      View All Outfits
-                    </Button>
-                  </InlineStack>
-                </BlockStack>
-              </Card>
             </BlockStack>
           </Layout.Section>
 
           {/* Sağ Kolon - Ayarlar & Konfigürasyon */}
           <Layout.Section variant="oneThird">
             <BlockStack gap="400">
-              {/* Theme Extension */}
+              {/* Theme Extension - DÜZELTİLDİ! */}
               <Card>
                 <BlockStack gap="300">
                   <InlineStack align="space-between" blockAlign="center">
@@ -324,8 +256,13 @@ export default function Index() {
                     The Virtual Try-On section is currently added to the product template.
                   </Text>
 
-                  <Button onClick={() => navigate("/app/theme")}>
-                    Manage
+                  {/* ✅ MANAGE BUTONU - TEMA EDİTÖRÜNE GİDİYOR */}
+                  <Button 
+                    url={themeEditorUrl}
+                    external
+                    variant="primary"
+                  >
+                    Manage in Theme Editor
                   </Button>
                 </BlockStack>
               </Card>
@@ -425,8 +362,8 @@ export default function Index() {
                         Last Updated
                       </Text>
                       <Text variant="bodySm">
-                        {new Date().toLocaleDateString('en-US', { 
-                          month: 'short', 
+                        {new Date().toLocaleDateString('en-US', {
+                          month: 'short',
                           day: 'numeric',
                           year: 'numeric'
                         })}
@@ -446,10 +383,10 @@ export default function Index() {
         onClose={() => setShowBuyCreditsModal(false)}
         title="Buy Additional Credits"
         primaryAction={{
-          content: `Buy ${selectedCredits} Credits for ${currentPrice}`,
+          content: `Buy ${selectedCredits} Credits for $${currentPrice}`,
           onAction: () => {
             // TODO: Ödeme işlemi
-            alert(`Purchasing ${selectedCredits} credits for ${currentPrice}`);
+            alert(`Purchasing ${selectedCredits} credits for $${currentPrice}`);
             setShowBuyCreditsModal(false);
           },
         }}
@@ -589,7 +526,7 @@ export default function Index() {
                   </InlineStack>
                   <InlineStack align="space-between">
                     <Text variant="bodySm" fontWeight="bold">5,000+ credits</Text>
-                    <Text variant="bodySm" fontWeight="bold" tone="success">$0.08/credit 🎉</Text>
+                    <Text variant="bodySm" fontWeight="bold" tone="success">$0.08/credit 🔥</Text>
                   </InlineStack>
                 </BlockStack>
               </BlockStack>
