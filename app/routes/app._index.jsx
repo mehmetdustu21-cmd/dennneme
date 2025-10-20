@@ -27,45 +27,75 @@ import { authenticate } from "../shopify.server";
 export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
 
-  // Theme'de extension'ın aktif olup olmadığını kontrol et
   let themeExtensionActive = false;
+  let productPageUrl = "";
+  let themeId = "";
   
   try {
+    // Ana tema ve ürün bilgisini al
     const response = await admin.graphql(
       `#graphql
       query {
-        currentAppInstallation {
-          activeSubscriptions {
-            id
+        themes(first: 1, query: "role:main") {
+          edges {
+            node {
+              id
+              name
+            }
           }
         }
-        app {
-          installation {
-            activeSubscriptions {
+        products(first: 1) {
+          edges {
+            node {
               id
+              handle
+              variants(first: 1) {
+                edges {
+                  node {
+                    id
+                  }
+                }
+              }
             }
           }
         }
       }`
     );
+
+    const result = await response.json();
     
-    // Basit kontrol - app yüklüyse extension aktif kabul et
-    // Daha detaylı kontrol için theme files API kullanılabilir
-    themeExtensionActive = true;
+    // Theme ID'yi al
+    if (result.data?.themes?.edges[0]) {
+      const fullThemeId = result.data.themes.edges[0].node.id;
+      themeId = fullThemeId.split('/').pop(); // "gid://shopify/Theme/154367131862" -> "154367131862"
+    }
+
+    // İlk ürünü al
+    if (result.data?.products?.edges[0]) {
+      const product = result.data.products.edges[0].node;
+      const variantId = product.variants.edges[0]?.node.id.split('/').pop();
+      productPageUrl = `/products/${product.handle}?variant=${variantId}`;
+    }
+
+    // App block'un eklenip eklenmediğini kontrol et
+    // (Şimdilik app yüklüyse aktif kabul ediyoruz, gelişmiş kontrol için theme files API gerekir)
+    themeExtensionActive = false; // Varsayılan olarak kapalı
+
   } catch (error) {
     console.error("Theme extension check failed:", error);
-    themeExtensionActive = false;
   }
 
   return {
     shop: session.shop,
     themeExtensionActive,
+    productPageUrl,
+    themeId,
   };
 };
 
 export default function Index() {
   const navigate = useNavigate();
-  const { shop, themeExtensionActive } = useLoaderData();
+  const { shop, themeExtensionActive, productPageUrl, themeId } = useLoaderData();
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false);
   const [selectedCredits, setSelectedCredits] = useState(50);
 
@@ -75,8 +105,10 @@ export default function Index() {
   // Extension UID (shopify.extension.toml'den)
   const extensionId = "ab3be2da-2fa1-6dcc-7d46-ef7ff8612ad35323609c";
   
-  // Tema editör URL'i - direkt Virtual Try-On bloğuna
-  const themeEditorUrl = `https://admin.shopify.com/store/${shopName}/themes/current/editor?context=apps&activateAppId=${extensionId}/virtual-try-on-button`;
+  // Tema editör URL'i - direkt ürün sayfasına + Virtual Try-On bloğuna
+  const themeEditorUrl = themeId && productPageUrl
+    ? `https://admin.shopify.com/store/${shopName}/themes/${themeId}/editor?previewPath=${encodeURIComponent(productPageUrl)}&context=apps&activateAppId=${extensionId}/virtual-try-on-button`
+    : `https://admin.shopify.com/store/${shopName}/themes/current/editor?context=apps&activateAppId=${extensionId}/virtual-try-on-button`;
 
   // Gerçek kullanım verisi (şimdilik simüle)
   const usageData = {
@@ -263,7 +295,7 @@ export default function Index() {
           {/* Sağ Kolon - Ayarlar & Konfigürasyon */}
           <Layout.Section variant="oneThird">
             <BlockStack gap="400">
-              {/* Theme Extension - KONTROL EDİLİYOR */}
+              {/* Theme Extension - GERÇEK KONTROL */}
               <Card>
                 <BlockStack gap="300">
                   <InlineStack align="space-between" blockAlign="center">
@@ -271,37 +303,37 @@ export default function Index() {
                       <div style={{
                         width: '32px',
                         height: '32px',
-                        background: themeExtensionActive ? '#4ADE80' : '#E5E7EB',
+                        background: themeExtensionActive ? '#4ADE80' : '#F59E0B',
                         borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
                       }}>
-                        <Icon source={CheckIcon} tone="base" />
+                        <Icon source={themeExtensionActive ? CheckIcon : AlertTriangleIcon} tone="base" />
                       </div>
                       <Text variant="headingSm" as="h3">
                         Theme extension
                       </Text>
                     </InlineStack>
-                    <Badge tone={themeExtensionActive ? "success" : "attention"}>
-                      {themeExtensionActive ? "Active" : "Not Active"}
+                    <Badge tone={themeExtensionActive ? "success" : "warning"}>
+                      {themeExtensionActive ? "Active" : "Setup Required"}
                     </Badge>
                   </InlineStack>
 
                   <Text variant="bodySm" tone="subdued">
                     {themeExtensionActive 
-                      ? "The Virtual Try-On section is currently added to the product template."
-                      : "Add the Virtual Try-On section to your product template."
+                      ? "The Virtual Try-On widget is active on your product pages."
+                      : "Add the Virtual Try-On widget to your product template to start using it."
                     }
                   </Text>
 
-                  {/* ✅ MANAGE BUTONU - VIRTUAL TRY-ON BLOĞUNA DİREKT GİDİYOR */}
+                  {/* ✅ MANAGE BUTONU - ÜRÜN SAYFASINA DİREKT GİDİYOR */}
                   <Button 
                     url={themeEditorUrl}
                     external
                     variant="primary"
                   >
-                    {themeExtensionActive ? "Manage in Theme Editor" : "Add to Theme"}
+                    {themeExtensionActive ? "Customize Widget" : "Add Widget to Theme"}
                   </Button>
                 </BlockStack>
               </Card>
