@@ -16,8 +16,7 @@ import {
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
-import { uploadImage, deleteImage } from "../utils/cloudinary.server";
-import db from "../db.server";
+import { getCustomModels, uploadCustomModel, deleteCustomModel } from "../models/custom-model.server";
 
 // Default model görselleri
 const DEFAULT_MODELS = [
@@ -86,15 +85,19 @@ const DEFAULT_MODELS = [
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   
-  // TODO: Database'den custom modelleri çek
-  // const customModels = await db.customModel.findMany({
-  //   where: { shop: session.shop }
-  // });
+  // Database'den custom modelleri çek
+  const customModels = await db.customModel.findMany({
+    where: { 
+      shop: session.shop,
+      active: true 
+    },
+    orderBy: { createdAt: 'desc' }
+  });
   
   return {
     shop: session.shop,
     defaultModels: DEFAULT_MODELS,
-    customModels: [], // Şimdilik boş
+    customModels,
   };
 };
 
@@ -119,16 +122,16 @@ export const action = async ({ request }) => {
       return { error: uploadResult.error };
     }
     
-    // TODO: Database'e kaydet
-    // await db.customModel.create({
-    //   data: {
-    //     shop: session.shop,
-    //     name: modelName,
-    //     url: uploadResult.url,
-    //     cloudinaryId: uploadResult.publicId,
-    //     gender: gender,
-    //   }
-    // });
+    // Database'e kaydet
+    await db.customModel.create({
+      data: {
+        shop: session.shop,
+        name: modelName,
+        url: uploadResult.url,
+        cloudinaryId: uploadResult.publicId,
+        gender: gender,
+      }
+    });
     
     return { 
       success: true, 
@@ -146,10 +149,10 @@ export const action = async ({ request }) => {
       await deleteImage(cloudinaryId);
     }
     
-    // TODO: Database'den sil
-    // await db.customModel.delete({
-    //   where: { id: modelId }
-    // });
+    // Database'den sil
+    await db.customModel.delete({
+      where: { id: modelId }
+    });
     
     return { success: true, message: "Model deleted successfully!" };
   }
