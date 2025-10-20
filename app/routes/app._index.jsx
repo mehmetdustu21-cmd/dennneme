@@ -28,7 +28,7 @@ export const loader = async ({ request }) => {
   try {
     const { admin, session } = await authenticate.admin(request);
 
-    let themeExtensionActive = true; // Basit: app yüklüyse aktif
+    let themeExtensionActive = false; // Varsayılan olarak kapalı (kullanıcı kuracak)
     let productPageUrl = "/products/example";
     let themeId = "";
     
@@ -313,27 +313,27 @@ export default function Index() {
                       <div style={{
                         width: '32px',
                         height: '32px',
-                        background: themeExtensionActive ? '#4ADE80' : '#F59E0B',
+                        background: themeExtensionActive ? '#4ADE80' : '#3B82F6',
                         borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
                       }}>
-                        <Icon source={themeExtensionActive ? CheckIcon : AlertTriangleIcon} tone="base" />
+                        <Icon source={themeExtensionActive ? CheckIcon : SettingsIcon} tone="base" />
                       </div>
                       <Text variant="headingSm" as="h3">
                         Theme extension
                       </Text>
                     </InlineStack>
-                    <Badge tone={themeExtensionActive ? "success" : "warning"}>
-                      {themeExtensionActive ? "Active" : "Setup Required"}
+                    <Badge tone={themeExtensionActive ? "success" : "info"}>
+                      {themeExtensionActive ? "Active" : "Ready to Setup"}
                     </Badge>
                   </InlineStack>
 
                   <Text variant="bodySm" tone="subdued">
                     {themeExtensionActive 
                       ? "The Virtual Try-On widget is active on your product pages."
-                      : "Click below to automatically add the widget to your product template."
+                      : "Click below to automatically add the Virtual Try-On widget to your theme."
                     }
                   </Text>
 
@@ -342,7 +342,7 @@ export default function Index() {
                     onClick={handleSetupWidget}
                     variant="primary"
                   >
-                    {themeExtensionActive ? "Customize Widget" : "Setup Widget"}
+                    {themeExtensionActive ? "Customize Widget" : "Setup App"}
                   </Button>
                 </BlockStack>
               </Card>
