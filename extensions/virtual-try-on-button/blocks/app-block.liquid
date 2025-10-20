@@ -1,6 +1,5 @@
 {% comment %}
   Virtual Try-On Widget - With Real Models
-  Bu dosya, model görsellerini App Proxy üzerinden çekecek şekilde yapılandırılmıştır.
 {% endcomment %}
 
 <style>
@@ -9,397 +8,17 @@
     background: #f9fafb;
     padding: 24px;
   }
-
-  .vto-wrapper {
-    max-width: 1280px;
-    margin: 0 auto;
-  }
-
-  .vto-header {
-    text-align: center;
-    margin-bottom: 40px;
-  }
-
-  .vto-title {
-    font-size: 48px;
-    font-weight: bold;
-    color: #111827;
-    margin-bottom: 12px;
-    letter-spacing: -1px;
-  }
-
-  .vto-subtitle {
-    font-size: 16px;
-    color: #6b7280;
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .vto-notice {
-    font-size: 13px;
-    font-style: italic;
-    color: #9ca3af;
-    margin-top: 8px;
-  }
-
-  .vto-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-  }
-
-  .vto-panel {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    padding: 24px;
-  }
-
-  .vto-panel-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .vto-panel-icon {
-    width: 24px;
-    height: 24px;
-    color: #111827;
-  }
-
-  .vto-panel-title {
-    font-size: 20px;
-    font-weight: 600;
-    color: #111827;
-  }
-
-  .vto-section-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 12px;
-  }
-
-  .vto-model-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-
-  .vto-upload-card {
-    aspect-ratio: 2/3;
-    border-radius: 8px;
-    border: 2px dashed #d1d5db;
-    background: #f9fafb;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    position: relative;
-  }
-
-  .vto-upload-card:hover {
-    border-color: #0d6efd;
-    background: #eff6ff;
-  }
-
-  .vto-upload-card svg {
-    width: 32px;
-    height: 32px;
-    color: #9ca3af;
-  }
-
-  .vto-upload-card:hover svg {
-    color: #0d6efd;
-  }
-
-  .vto-upload-card span {
-    font-size: 12px;
-    font-weight: 500;
-    color: #6b7280;
-  }
-
-  .vto-upload-card:hover span {
-    color: #0d6efd;
-  }
-
-  .vto-upload-card.has-image {
-    border: 2px solid #0d6efd;
-    background: transparent;
-  }
-
-  .vto-upload-card.has-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 6px;
-  }
-
-  .vto-item {
-    aspect-ratio: 2/3;
-    border-radius: 8px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    border: 2px solid transparent;
-  }
-
-  .vto-item:hover {
-    transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  }
-
-  .vto-item.selected {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #0d6efd;
-  }
-
-  .vto-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .vto-item-label {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(transparent, rgba(0,0,0,0.7));
-    color: white;
-    font-size: 12px;
-    font-weight: 500;
-    padding: 12px 8px 8px;
-  }
-
-  .vto-item-badge {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  .vto-badge-male {
-    background: #3b82f6;
-    color: white;
-  }
-
-  .vto-badge-female {
-    background: #ec4899;
-    color: white;
-  }
-
-  .vto-preview {
-    aspect-ratio: 3/4;
-    background: #f3f4f6;
-    border-radius: 12px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .vto-preview-placeholder {
-    text-align: center;
-    color: #9ca3af;
-  }
-
-  .vto-preview-placeholder svg {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 12px;
-  }
-
-  .vto-slider-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-  }
-
-  .vto-before, .vto-after {
-    position: absolute;
-    inset: 0;
-  }
-
-  .vto-before img, .vto-after img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .vto-slider-divider {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: white;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    cursor: ew-resize;
-    z-index: 10;
-  }
-
-  .vto-slider-handle {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 40px;
-    height: 40px;
-    background: white;
-    border-radius: 50%;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .vto-badge {
-    position: absolute;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .vto-badge-before {
-    top: 16px;
-    left: 16px;
-    background: rgba(0,0,0,0.7);
-    color: white;
-  }
-
-  .vto-badge-after {
-    top: 16px;
-    right: 16px;
-    background: #0d6efd;
-    color: white;
-  }
-
-  .vto-generate-btn {
-    width: 100%;
-    padding: 16px 24px;
-    background: #0d6efd;
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.2s;
-  }
-
-  .vto-generate-btn:hover:not(:disabled) {
-    background: #0b5ed7;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-  }
-
-  .vto-generate-btn:disabled {
-    background: #e5e7eb;
-    color: #9ca3af;
-    cursor: not-allowed;
-  }
-
-  @media (max-width: 1024px) {
-    .vto-grid {
-      grid-template-columns: 1fr;
-    }
-    .vto-model-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
+  /* ... (Tüm diğer CSS kurallarınız) ... */
   @media (max-width: 640px) {
     .vto-model-grid {
       grid-template-columns: repeat(2, 1fr);
     }
   }
 </style>
-
-<div class="vto-container">
-  <div class="vto-wrapper">
-    
-        <div class="vto-header">
-      <h1 class="vto-title">TRY IT ON</h1>
-      <p class="vto-subtitle">
-        Build your perfect outfit and see it come to life. Try styles on our models
-        or on yourself, mix and match looks, and add your favorites to the cart.
-      </p>
-      <p class="vto-notice">
-        Note: The preview is AI-generated and may not be 100% accurate. No customer data is stored.
-      </p>
-    </div>
-
-    <input type="file" id="vto-upload-hidden" accept="image/*" style="display: none;">
-
-    <div class="vto-grid">
-
-            <div class="vto-panel">
-        <div class="vto-panel-header">
-          <svg class="vto-panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-          </svg>
-          <h2 class="vto-panel-title">Browse</h2>
-        </div>
-
-                <div>
-          <h3 class="vto-section-title">Select Model</h3>
-          <div class="vto-model-grid" id="vto-models"></div>
-        </div>
-      </div>
-
-            <div class="vto-panel">
-        <div class="vto-panel-header">
-          <svg class="vto-panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-          </svg>
-          <h2 class="vto-panel-title">Result</h2>
-        </div>
-
-        <div class="vto-preview" id="vto-preview">
-          <div class="vto-preview-placeholder">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-            </svg>
-            <p style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">Ready to Generate</p>
-            <p style="font-size: 14px;">Select a model and click generate below</p>
-          </div>
-        </div>
-
-        <button class="vto-generate-btn" id="vto-generate" disabled>
-          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-          </svg>
-          Generate Preview
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-{% comment %} 
-    Schema parse hatasını gidermek için JavaScript ve CSS bloklarını
-    RAW etiketleri içine alıyoruz.
+{% comment %}
+    Hata veren JS ve CSS animasyonlarını buraya taşıyoruz
+    ve RAW etiketleri ile izole ediyoruz.
 {% endcomment %}
-
 {% raw %}
 <script>
 (function() {
@@ -567,6 +186,69 @@
 </style>
 {% endraw %}
 
+
+<div class="vto-container">
+  <div class="vto-wrapper">
+    
+        <div class="vto-header">
+      <h1 class="vto-title">TRY IT ON</h1>
+      <p class="vto-subtitle">
+        Build your perfect outfit and see it come to life. Try styles on our models
+        or on yourself, mix and match looks, and add your favorites to the cart.
+      </p>
+      <p class="vto-notice">
+        Note: The preview is AI-generated and may not be 100% accurate. No customer data is stored.
+      </p>
+    </div>
+
+    <input type="file" id="vto-upload-hidden" accept="image/*" style="display: none;">
+
+    <div class="vto-grid">
+
+            <div class="vto-panel">
+        <div class="vto-panel-header">
+          <svg class="vto-panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <h2 class="vto-panel-title">Browse</h2>
+        </div>
+
+                <div>
+          <h3 class="vto-section-title">Select Model</h3>
+          <div class="vto-model-grid" id="vto-models"></div>
+        </div>
+      </div>
+
+            <div class="vto-panel">
+        <div class="vto-panel-header">
+          <svg class="vto-panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+          </svg>
+          <h2 class="vto-panel-title">Result</h2>
+        </div>
+
+        <div class="vto-preview" id="vto-preview">
+          <div class="vto-preview-placeholder">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+            </svg>
+            <p style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">Ready to Generate</p>
+            <p style="font-size: 14px;">Select a model and click generate below</p>
+          </div>
+        </div>
+
+        <button class="vto-generate-btn" id="vto-generate" disabled>
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+          </svg>
+          Generate Preview
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
 {% schema %}
 {
   "name": "Virtual Try-On",
