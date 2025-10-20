@@ -17,7 +17,6 @@ import {
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { uploadImage, deleteImage } from "../utils/cloudinary.server";
-import db from "../db.server";
 
 // Default model görselleri
 const DEFAULT_MODELS = [
