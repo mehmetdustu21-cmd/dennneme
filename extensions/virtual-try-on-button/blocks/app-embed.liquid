@@ -1,0 +1,25 @@
+{% comment %}
+  Virtual Try-On App Embed (Minimal)
+  Bu sadece Shopify'ın "app embed missing" uyarısını kapatmak için.
+  Gerçek işlevsellik app-block.liquid'de.
+{% endcomment %}
+
+<style>
+  /* Boş - hiçbir şey görünmeyecek */
+</style>
+
+<script>
+  // Virtual Try-On global config (minimal)
+  window.VirtualTryOnApp = window.VirtualTryOnApp || {
+    version: '1.0.0',
+    initialized: true
+  };
+</script>
+
+{% schema %}
+{
+  "name": "Virtual Try-On",
+  "target": "head",
+  "settings": []
+}
+{% endschema %}
