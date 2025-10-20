@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useLoaderData, useActionData, useSubmit } from "react-router";
 import {
   Page,
@@ -8,7 +8,6 @@ import {
   BlockStack,
   InlineGrid,
   Button,
-  Thumbnail,
   InlineStack,
   Badge,
   Banner,
@@ -17,77 +16,69 @@ import {
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
+import { uploadImage, deleteImage } from "../utils/cloudinary.server";
+import db from "../db.server";
 
-// Default model görselleri (senin gönderdiğin görseller)
+// Default model görselleri
 const DEFAULT_MODELS = [
   {
     id: "model-1",
-    name: "Model 1 - Male White T-Shirt",
+    name: "Male Model 1",
     url: "https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=400&h=600&fit=crop",
-    type: "default",
     gender: "male"
   },
   {
     id: "model-2",
-    name: "Model 2 - Male Gray T-Shirt",
+    name: "Male Model 2",
     url: "https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=400&h=600&fit=crop",
-    type: "default",
     gender: "male"
   },
   {
     id: "model-3",
-    name: "Model 3 - Male Black Tank Top",
+    name: "Male Model 3",
     url: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400&h=600&fit=crop",
-    type: "default",
     gender: "male"
   },
   {
     id: "model-4",
-    name: "Model 4 - Male White Round Neck",
+    name: "Male Model 4",
     url: "https://images.unsplash.com/photo-1562157873-818bc0726f68?w=400&h=600&fit=crop",
-    type: "default",
     gender: "male"
   },
   {
     id: "model-5",
-    name: "Model 5 - Male Gray Tank Top",
+    name: "Male Model 5",
     url: "https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=400&h=600&fit=crop",
-    type: "default",
     gender: "male"
   },
   {
     id: "model-6",
-    name: "Model 6 - Female White T-Shirt",
+    name: "Female Model 1",
     url: "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=400&h=600&fit=crop",
-    type: "default",
     gender: "female"
   },
   {
     id: "model-7",
-    name: "Model 7 - Female Navy Sports Bra",
+    name: "Female Model 2",
     url: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=600&fit=crop",
-    type: "default",
     gender: "female"
   },
   {
     id: "model-8",
-    name: "Model 8 - Female Beige Sports Set",
+    name: "Female Model 3",
     url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=600&fit=crop",
-    type: "default",
     gender: "female"
   },
   {
     id: "model-9",
-    name: "Model 9 - Female Black Sports Bra",
+    name: "Female Model 4",
     url: "https://images.unsplash.com/photo-1518644961665-ed172691aaa1?w=400&h=600&fit=crop",
-    type: "default",
     gender: "female"
   },
   {
     id: "model-10",
-    name: "Model 10 - Female White Sports Bra",
+    name: "Female Model 5",
     url: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=600&fit=crop",
-    type: "default",
     gender: "female"
   }
 ];
@@ -96,12 +87,14 @@ export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   
   // TODO: Database'den custom modelleri çek
-  const customModels = [];
+  // const customModels = await db.customModel.findMany({
+  //   where: { shop: session.shop }
+  // });
   
   return {
     shop: session.shop,
     defaultModels: DEFAULT_MODELS,
-    customModels,
+    customModels: [], // Şimdilik boş
   };
 };
 
@@ -111,13 +104,53 @@ export const action = async ({ request }) => {
   const actionType = formData.get("action");
   
   if (actionType === "upload") {
-    // TODO: Custom model upload işlemi
-    return { success: true, message: "Model uploaded successfully!" };
+    const imageBase64 = formData.get("image");
+    const modelName = formData.get("name") || "Custom Model";
+    const gender = formData.get("gender") || "male";
+    
+    if (!imageBase64) {
+      return { error: "No image provided" };
+    }
+    
+    // Cloudinary'ye yükle
+    const uploadResult = await uploadImage(imageBase64, `virtual-tryon/${session.shop}/models`);
+    
+    if (!uploadResult.success) {
+      return { error: uploadResult.error };
+    }
+    
+    // TODO: Database'e kaydet
+    // await db.customModel.create({
+    //   data: {
+    //     shop: session.shop,
+    //     name: modelName,
+    //     url: uploadResult.url,
+    //     cloudinaryId: uploadResult.publicId,
+    //     gender: gender,
+    //   }
+    // });
+    
+    return { 
+      success: true, 
+      message: "Model uploaded successfully!",
+      url: uploadResult.url 
+    };
   }
   
   if (actionType === "delete") {
-    // TODO: Custom model silme işlemi
     const modelId = formData.get("modelId");
+    const cloudinaryId = formData.get("cloudinaryId");
+    
+    // Cloudinary'den sil
+    if (cloudinaryId) {
+      await deleteImage(cloudinaryId);
+    }
+    
+    // TODO: Database'den sil
+    // await db.customModel.delete({
+    //   where: { id: modelId }
+    // });
+    
     return { success: true, message: "Model deleted successfully!" };
   }
   
@@ -130,26 +163,58 @@ export default function Models() {
   const submit = useSubmit();
   
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [modelName, setModelName] = useState("");
+  const [modelGender, setModelGender] = useState("male");
   const [previewModel, setPreviewModel] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-  const handleFileUpload = (files) => {
-    setSelectedFiles(files);
+  const handleFileDrop = useCallback((files) => {
+    if (files.length > 0) {
+      const file = files[0];
+      setSelectedFile(file);
+      
+      // Preview için FileReader kullan
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // Base64 preview
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+    
+    setUploading(true);
+    
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      
+      const formData = new FormData();
+      formData.append("action", "upload");
+      formData.append("image", base64String);
+      formData.append("name", modelName || "Custom Model");
+      formData.append("gender", modelGender);
+      
+      submit(formData, { method: "post" });
+      
+      setShowUploadModal(false);
+      setSelectedFile(null);
+      setModelName("");
+      setUploading(false);
+    };
+    
+    reader.readAsDataURL(selectedFile);
   };
 
-  const handleUpload = () => {
-    const formData = new FormData();
-    formData.append("action", "upload");
-    // TODO: Dosya upload işlemi
-    submit(formData, { method: "post" });
-    setShowUploadModal(false);
-  };
-
-  const handleDelete = (modelId) => {
+  const handleDelete = (modelId, cloudinaryId) => {
     if (confirm("Are you sure you want to delete this model?")) {
       const formData = new FormData();
       formData.append("action", "delete");
       formData.append("modelId", modelId);
+      formData.append("cloudinaryId", cloudinaryId);
       submit(formData, { method: "post" });
     }
   };
@@ -180,7 +245,6 @@ export default function Models() {
 
         <Layout>
           <Layout.Section>
-            {/* Default Models */}
             <Card>
               <BlockStack gap="400">
                 <InlineStack align="space-between" blockAlign="center">
@@ -191,7 +255,7 @@ export default function Models() {
                 </InlineStack>
 
                 <Text variant="bodySm" tone="subdued">
-                  These professional model images are ready to use for virtual try-on. Click on any model to preview.
+                  Professional model images ready for virtual try-on.
                 </Text>
 
                 <InlineGrid columns={{ xs: 2, sm: 3, md: 4, lg: 5 }} gap="400">
@@ -232,29 +296,21 @@ export default function Models() {
               </BlockStack>
             </Card>
 
-            {/* Custom Models */}
             {customModels.length > 0 && (
               <Card>
                 <BlockStack gap="400">
                   <InlineStack align="space-between" blockAlign="center">
                     <Text variant="headingMd" as="h2">
-                      Custom Models ({customModels.length})
+                      Your Custom Models ({customModels.length})
                     </Text>
-                    <Badge>Your uploads</Badge>
+                    <Badge>Custom</Badge>
                   </InlineStack>
 
                   <InlineGrid columns={{ xs: 2, sm: 3, md: 4, lg: 5 }} gap="400">
                     {customModels.map((model) => (
                       <Card key={model.id}>
                         <BlockStack gap="200">
-                          <div 
-                            style={{ 
-                              cursor: "pointer",
-                              borderRadius: "8px",
-                              overflow: "hidden",
-                              position: "relative"
-                            }}
-                          >
+                          <div style={{ position: "relative" }}>
                             <img 
                               src={model.url} 
                               alt={model.name}
@@ -262,7 +318,8 @@ export default function Models() {
                                 width: "100%",
                                 height: "240px",
                                 objectFit: "cover",
-                                display: "block"
+                                display: "block",
+                                borderRadius: "8px"
                               }}
                             />
                             <div style={{
@@ -272,9 +329,8 @@ export default function Models() {
                             }}>
                               <Button
                                 size="slim"
-                                variant="primary"
                                 tone="critical"
-                                onClick={() => handleDelete(model.id)}
+                                onClick={() => handleDelete(model.id, model.cloudinaryId)}
                               >
                                 Delete
                               </Button>
@@ -294,24 +350,17 @@ export default function Models() {
 
           <Layout.Section variant="oneThird">
             <BlockStack gap="400">
-              {/* Info Card */}
               <Card>
                 <BlockStack gap="300">
                   <Text variant="headingSm" as="h3">
                     ℹ️ About Models
                   </Text>
-                  <BlockStack gap="200">
-                    <Text variant="bodySm">
-                      <strong>Default Models:</strong> Professional photos optimized for virtual try-on.
-                    </Text>
-                    <Text variant="bodySm">
-                      <strong>Custom Models:</strong> Upload your own model images for branded experience.
-                    </Text>
-                  </BlockStack>
+                  <Text variant="bodySm">
+                    Use default professional models or upload your own branded model images.
+                  </Text>
                 </BlockStack>
               </Card>
 
-              {/* Guidelines */}
               <Card>
                 <BlockStack gap="300">
                   <Text variant="headingSm" as="h3">
@@ -337,9 +386,10 @@ export default function Models() {
         onClose={() => setShowUploadModal(false)}
         title="Upload Custom Model"
         primaryAction={{
-          content: "Upload",
+          content: uploading ? "Uploading..." : "Upload",
           onAction: handleUpload,
-          disabled: selectedFiles.length === 0,
+          disabled: !selectedFile || uploading,
+          loading: uploading,
         }}
         secondaryActions={[
           {
@@ -350,25 +400,29 @@ export default function Models() {
       >
         <Modal.Section>
           <BlockStack gap="400">
-            <Text variant="bodyMd">
-              Upload your own model images for a branded virtual try-on experience.
-            </Text>
-
             <DropZone
               accept="image/*"
               type="image"
-              onDrop={handleFileUpload}
+              onDrop={handleFileDrop}
+              allowMultiple={false}
             >
-              {selectedFiles.length > 0 ? (
+              {selectedFile ? (
                 <BlockStack gap="200">
                   <Text variant="bodySm" alignment="center">
-                    {selectedFiles.length} file(s) selected
+                    {selectedFile.name}
+                  </Text>
+                  <Text variant="bodySm" tone="subdued" alignment="center">
+                    Click to change
                   </Text>
                 </BlockStack>
               ) : (
-                <DropZone.FileUpload actionTitle="Choose files" />
+                <DropZone.FileUpload actionTitle="Upload image" />
               )}
             </DropZone>
+
+            <Text variant="bodySm" tone="subdued">
+              Upload a professional model photo with clean background for best results.
+            </Text>
           </BlockStack>
         </Modal.Section>
       </Modal>
