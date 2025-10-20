@@ -25,77 +25,83 @@ import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
-  const { admin, session } = await authenticate.admin(request);
-
-  let themeExtensionActive = false;
-  let productPageUrl = "";
-  let themeId = "";
-  
   try {
-    // Ana tema ve ürün bilgisini al
-    const response = await admin.graphql(
-      `#graphql
-      query {
-        themes(first: 1, query: "role:main") {
-          edges {
-            node {
-              id
-              name
+    const { admin, session } = await authenticate.admin(request);
+
+    let themeExtensionActive = true; // Basit: app yüklüyse aktif
+    let productPageUrl = "/products/example";
+    let themeId = "";
+    
+    try {
+      // Ana tema ve ürün bilgisini al
+      const response = await admin.graphql(
+        `#graphql
+        query {
+          themes(first: 1, query: "role:main") {
+            edges {
+              node {
+                id
+                name
+              }
             }
           }
-        }
-        products(first: 1) {
-          edges {
-            node {
-              id
-              handle
-              variants(first: 1) {
-                edges {
-                  node {
-                    id
+          products(first: 1) {
+            edges {
+              node {
+                id
+                handle
+                variants(first: 1) {
+                  edges {
+                    node {
+                      id
+                    }
                   }
                 }
               }
             }
           }
-        }
-      }`
-    );
+        }`
+      );
 
-    const result = await response.json();
-    
-    // Theme ID'yi al
-    if (result.data?.themes?.edges[0]) {
-      const fullThemeId = result.data.themes.edges[0].node.id;
-      themeId = fullThemeId.split('/').pop(); // "gid://shopify/Theme/154367131862" -> "154367131862"
+      const result = await response.json();
+      
+      // Theme ID'yi al
+      if (result.data?.themes?.edges[0]) {
+        const fullThemeId = result.data.themes.edges[0].node.id;
+        themeId = fullThemeId.split('/').pop();
+      }
+
+      // İlk ürünü al
+      if (result.data?.products?.edges[0]) {
+        const product = result.data.products.edges[0].node;
+        const variantId = product.variants.edges[0]?.node.id.split('/').pop();
+        productPageUrl = `/products/${product.handle}?variant=${variantId}`;
+      }
+    } catch (graphqlError) {
+      console.error("GraphQL query failed:", graphqlError);
+      // GraphQL hatası olsa bile devam et
     }
 
-    // İlk ürünü al
-    if (result.data?.products?.edges[0]) {
-      const product = result.data.products.edges[0].node;
-      const variantId = product.variants.edges[0]?.node.id.split('/').pop();
-      productPageUrl = `/products/${product.handle}?variant=${variantId}`;
-    }
-
-    // App block'un eklenip eklenmediğini kontrol et
-    // Basit çözüm: App yüklüyse aktif kabul et
-    themeExtensionActive = true; // App yüklüyse widget de ekliydir
-
+    return {
+      shop: session.shop,
+      themeExtensionActive,
+      productPageUrl,
+      themeId,
+    };
   } catch (error) {
-    console.error("Theme extension check failed:", error);
+    console.error("Loader error:", error);
+    // En kötü ihtimal bile çalışsın
+    return {
+      shop: "unknown",
+      themeExtensionActive: true,
+      productPageUrl: "/products/example",
+      themeId: "",
+    };
   }
-
-  return {
-    shop: session.shop,
-    themeExtensionActive,
-    productPageUrl,
-    themeId,
-  };
 };
 
 export default function Index() {
   const navigate = useNavigate();
-  const shopify = useAppBridge();
   const { shop, themeExtensionActive, productPageUrl, themeId } = useLoaderData();
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false);
   const [selectedCredits, setSelectedCredits] = useState(50);
