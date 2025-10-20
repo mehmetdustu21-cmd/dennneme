@@ -400,18 +400,24 @@
 
 <script>
 (function() {
-  // Real models from your shop
+  // Get shop domain
+  const shopDomain = window.location.hostname;
+  
+  // Construct app proxy URL
+  const proxyBase = `https://${shopDomain}/apps/virtual-tryon`;
+  
+  // Real models from app
   const models = [
-    { id: 'male-1', name: 'Michael', image: '/models/male-1.png', gender: 'male' },
-    { id: 'male-2', name: 'James', image: '/models/male-2.png', gender: 'male' },
-    { id: 'male-3', name: 'David', image: '/models/male-3.png', gender: 'male' },
-    { id: 'male-4', name: 'Ryan', image: '/models/male-4.png', gender: 'male' },
-    { id: 'male-5', name: 'Alex', image: '/models/male-5.png', gender: 'male' },
-    { id: 'female-1', name: 'Emma', image: '/models/female-1.png', gender: 'female' },
-    { id: 'female-2', name: 'Sophia', image: '/models/female-2.png', gender: 'female' },
-    { id: 'female-3', name: 'Olivia', image: '/models/female-3.png', gender: 'female' },
-    { id: 'female-4', name: 'Isabella', image: '/models/female-4.png', gender: 'female' },
-    { id: 'female-5', name: 'Ava', image: '/models/female-5.png', gender: 'female' }
+    { id: 'male-1', name: 'Michael', image: `${proxyBase}/models/male-1.png`, gender: 'male' },
+    { id: 'male-2', name: 'James', image: `${proxyBase}/models/male-2.png`, gender: 'male' },
+    { id: 'male-3', name: 'David', image: `${proxyBase}/models/male-3.png`, gender: 'male' },
+    { id: 'male-4', name: 'Ryan', image: `${proxyBase}/models/male-4.png`, gender: 'male' },
+    { id: 'male-5', name: 'Alex', image: `${proxyBase}/models/male-5.png`, gender: 'male' },
+    { id: 'female-1', name: 'Emma', image: `${proxyBase}/models/female-1.png`, gender: 'female' },
+    { id: 'female-2', name: 'Sophia', image: `${proxyBase}/models/female-2.png`, gender: 'female' },
+    { id: 'female-3', name: 'Olivia', image: `${proxyBase}/models/female-3.png`, gender: 'female' },
+    { id: 'female-4', name: 'Isabella', image: `${proxyBase}/models/female-4.png`, gender: 'female' },
+    { id: 'female-5', name: 'Ava', image: `${proxyBase}/models/female-5.png`, gender: 'female' }
   ];
 
   let selectedModel = null;
