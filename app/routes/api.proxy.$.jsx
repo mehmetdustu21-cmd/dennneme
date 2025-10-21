@@ -1,72 +1,25 @@
 // app/routes/api.proxy.$.jsx
-import { json } from "@remix-run/node";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+// Sadece generate endpoint için - modeller artık Cloudinary'de
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Bu dosyanın sadece server-side çalışacağını belirt
+export const config = {
+  runtime: 'nodejs'
+};
 
 export async function loader({ params }) {
   const requestPath = params["*"];
-  
-  console.log("[Proxy] Request path:", requestPath);
+  console.log("[Proxy] GET request path:", requestPath);
 
-  // Model görselleri için
-  if (requestPath.startsWith("models/")) {
-    const filename = requestPath.replace("models/", "");
-    const filePath = path.join(process.cwd(), "public", "models", filename);
-    
-    console.log("[Proxy] Looking for model image:", filePath);
-
-    try {
-      // Dosya var mı kontrol et
-      if (!fs.existsSync(filePath)) {
-        console.error("[Proxy] File not found:", filePath);
-        return new Response("Model image not found", { status: 404 });
-      }
-
-      // Dosyayı oku
-      const fileBuffer = fs.readFileSync(filePath);
-      
-      // Content type belirle
-      const contentType = filename.endsWith('.png') ? 'image/png' : 
-                         filename.endsWith('.jpg') || filename.endsWith('.jpeg') ? 'image/jpeg' : 
-                         'application/octet-stream';
-
-      console.log("[Proxy] Serving file:", filename, "Size:", fileBuffer.length, "bytes");
-
-      // CORS headers ile birlikte döndür
-      return new Response(fileBuffer, {
-        status: 200,
-        headers: {
-          "Content-Type": contentType,
-          "Content-Length": fileBuffer.length.toString(),
-          "Cache-Control": "public, max-age=31536000, immutable",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
-        },
-      });
-    } catch (error) {
-      console.error("[Proxy] Error serving model image:", error);
-      return new Response(`Error: ${error.message}`, { status: 500 });
-    }
-  }
-
-  // Generate endpoint için
   if (requestPath === "generate") {
-    return json({ error: "Use POST method for generation" }, { status: 405 });
+    return Response.json({ error: "Use POST method for generation" }, { status: 405 });
   }
 
-  // Bilinmeyen path
-  console.warn("[Proxy] Unknown path:", requestPath);
-  return new Response("Not Found", { status: 404 });
+  return Response.json({ error: "Not Found" }, { status: 404 });
 }
 
-// POST istekleri için (generate)
 export async function action({ request, params }) {
   const requestPath = params["*"];
+  console.log("[Proxy] POST request path:", requestPath);
   
   if (requestPath === "generate") {
     try {
@@ -95,7 +48,7 @@ export async function action({ request, params }) {
 
       const result = await response.json();
       
-      console.log("[Proxy] fal.ai response:", result);
+      console.log("[Proxy] fal.ai response status:", response.status);
 
       if (result.image?.url) {
         return json({ 
@@ -103,9 +56,10 @@ export async function action({ request, params }) {
           result_url: result.image.url 
         });
       } else {
+        console.error("[Proxy] No image in result:", result);
         return json({ 
           success: false, 
-          error: "No result image returned" 
+          error: result.error || "No result image returned" 
         }, { status: 400 });
       }
     } catch (error) {
@@ -117,5 +71,5 @@ export async function action({ request, params }) {
     }
   }
 
-  return new Response("Method not allowed", { status: 405 });
+  return json({ error: "Method not allowed" }, { status: 405 });
 }
