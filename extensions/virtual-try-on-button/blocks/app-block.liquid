@@ -255,16 +255,33 @@
       </div>
       
       <div id="vto-model-tab" class="vto-model-grid">
-        {% for i in (1..4) %}
-          <div class="vto-model-item" data-model="male-{{ i }}" data-model-url="/apps/virtual-tryon/models/male-{{ i }}.png">
-            <img src="/apps/virtual-tryon/models/male-{{ i }}.png" alt="Male Model {{ i }}" loading="lazy">
-          </div>
-        {% endfor %}
-        {% for i in (1..4) %}
-          <div class="vto-model-item" data-model="female-{{ i }}" data-model-url="/apps/virtual-tryon/models/female-{{ i }}.png">
-            <img src="/apps/virtual-tryon/models/female-{{ i }}.png" alt="Female Model {{ i }}" loading="lazy">
-          </div>
-        {% endfor %}
+        <div class="vto-model-item" data-model="male-1" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/male-1_tgqkkw.png">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/male-1_tgqkkw.png" alt="Male Model 1" loading="lazy">
+        </div>
+        <div class="vto-model-item" data-model="male-2" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/male-2_lq1tq4.png">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/male-2_lq1tq4.png" alt="Male Model 2" loading="lazy">
+        </div>
+        <div class="vto-model-item" data-model="male-3" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051823/male-3_g65gss.png">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051823/male-3_g65gss.png" alt="Male Model 3" loading="lazy">
+        </div>
+        <div class="vto-model-item" data-model="male-4" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051825/male-4_i2cycp.png">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051825/male-4_i2cycp.png" alt="Male Model 4" loading="lazy">
+        </div>
+        <div class="vto-model-item" data-model="male-5" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051821/male-5_e8xch5.png">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051821/male-5_e8xch5.png" alt="Male Model 5" loading="lazy">
+        </div>
+        <div class="vto-model-item" data-model="female-2" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/female-2_g1ptie.png">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/female-2_g1ptie.png" alt="Female Model 2" loading="lazy">
+        </div>
+        <div class="vto-model-item" data-model="female-3" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051823/female-3_odrhyn.png">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051823/female-3_odrhyn.png" alt="Female Model 3" loading="lazy">
+        </div>
+        <div class="vto-model-item" data-model="female-4" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051821/female-4_n1crei.png">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051821/female-4_n1crei.png" alt="Female Model 4" loading="lazy">
+        </div>
+        <div class="vto-model-item" data-model="female-5" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/female-5_prlopn.png">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/female-5_prlopn.png" alt="Female Model 5" loading="lazy">
+        </div>
       </div>
       
       <div id="vto-outfit-tab" class="vto-model-grid" style="display: none;">
@@ -309,7 +326,7 @@
           this.classList.add('selected');
           
           selectedModel = this.dataset.model;
-          selectedModelImage = this.querySelector('img').src;
+          selectedModelImage = this.dataset.modelUrl;
           
           // Sağ panelde göster
           document.getElementById('vto-selected-model').innerHTML = 
