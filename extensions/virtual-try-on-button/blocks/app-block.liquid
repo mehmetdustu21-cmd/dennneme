@@ -1,480 +1,401 @@
+{% comment %}
+  extensions/virtual-try-on-button/blocks/app-block.liquid
+  Browse bölümünde ürünleri göstermek için
+{% endcomment %}
+
+<div id="virtual-tryon-widget" style="max-width: 1400px; margin: 40px auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+  <style>
+    .vto-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 32px;
+      padding: 20px;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+    }
+    
+    .vto-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 500px;
+    }
+    
+    .vto-panel-header {
+      font-size: 16px;
+      font-weight: 500;
+      color: #000;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .vto-search {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    
+    .vto-search:focus {
+      outline: none;
+      border-color: #000;
+    }
+    
+    .vto-product-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      overflow-y: auto;
+      max-height: 600px;
+    }
+    
+    .vto-product-item {
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      transition: all 0.2s;
+      overflow: hidden;
+      background: #f9f9f9;
+    }
+    
+    .vto-product-item:hover {
+      border-color: #000;
+    }
+    
+    .vto-product-item.selected {
+      border-color: #000;
+      background: #fff;
+    }
+    
+    .vto-product-item img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      display: block;
+    }
+    
+    .vto-product-info {
+      padding: 8px;
+    }
+    
+    .vto-product-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: #000;
+      margin: 0 0 4px 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .vto-product-price {
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .vto-result-area {
+      background: #f9f9f9;
+      border-radius: 4px;
+      padding: 20px;
+      min-height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    
+    .vto-generate-btn {
+      width: 100%;
+      padding: 14px;
+      background: #000;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: background 0.2s;
+    }
+    
+    .vto-generate-btn:hover {
+      background: #333;
+    }
+    
+    .vto-generate-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .vto-model-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+    
+    .vto-model-item {
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      transition: all 0.2s;
+      overflow: hidden;
+    }
+    
+    .vto-model-item:hover {
+      border-color: #000;
+    }
+    
+    .vto-model-item.selected {
+      border-color: #000;
+    }
+    
+    .vto-model-item img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      display: block;
+    }
+    
+    .vto-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .vto-tab {
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+      transition: all 0.2s;
+    }
+    
+    .vto-tab.active {
+      color: #000;
+      border-bottom-color: #000;
+    }
+    
+    .vto-selected-model {
+      background: #f9f9f9;
+      border-radius: 4px;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .vto-selected-model img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    
+    .vto-placeholder {
+      color: #999;
+      font-size: 14px;
+    }
+  </style>
+
+  <div class="vto-container">
+    <!-- Sol Panel: Garment (Browse) -->
+    <div class="vto-panel">
+      <div class="vto-panel-header">Garment</div>
+      <input 
+        type="text" 
+        class="vto-search" 
+        id="vto-search-input"
+        placeholder="Search for products..."
+      >
+      
+      <div class="vto-product-grid" id="vto-product-grid">
+        {% comment %} Mevcut koleksiyondan veya tüm ürünlerden ilk 20'sini göster {% endcomment %}
+        {% assign products_to_show = collections.all.products | default: all_products %}
+        
+        {% for product in products_to_show limit: 20 %}
+          {% if product.featured_image %}
+            <div class="vto-product-item" data-product-id="{{ product.id }}" data-product-image="{{ product.featured_image | img_url: 'large' }}">
+              <img src="{{ product.featured_image | img_url: 'medium' }}" alt="{{ product.title }}">
+              <div class="vto-product-info">
+                <p class="vto-product-title">{{ product.title }}</p>
+                <p class="vto-product-price">{{ product.price | money }}</p>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+        
+        {% if products_to_show.size == 0 %}
+          <div class="vto-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+            No products found
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Orta Panel: Result -->
+    <div class="vto-panel">
+      <div class="vto-panel-header">Result</div>
+      
+      <button class="vto-generate-btn" id="vto-generate-btn" disabled>
+        Generate Preview
+      </button>
+      
+      <div class="vto-result-area" id="vto-result-area">
+        <div class="vto-placeholder">Select a model to generate preview</div>
+      </div>
+      
+      <div class="vto-tabs">
+        <button class="vto-tab active" data-tab="model">Model</button>
+        <button class="vto-tab" data-tab="outfit">Outfit</button>
+      </div>
+      
+      <div id="vto-model-tab" class="vto-model-grid">
+        {% for i in (1..4) %}
+          <div class="vto-model-item" data-model="male-{{ i }}" data-model-url="/apps/virtual-tryon/models/male-{{ i }}.png">
+            <img src="/apps/virtual-tryon/models/male-{{ i }}.png" alt="Male Model {{ i }}" loading="lazy">
+          </div>
+        {% endfor %}
+        {% for i in (1..4) %}
+          <div class="vto-model-item" data-model="female-{{ i }}" data-model-url="/apps/virtual-tryon/models/female-{{ i }}.png">
+            <img src="/apps/virtual-tryon/models/female-{{ i }}.png" alt="Female Model {{ i }}" loading="lazy">
+          </div>
+        {% endfor %}
+      </div>
+      
+      <div id="vto-outfit-tab" class="vto-model-grid" style="display: none;">
+        <div class="vto-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 20px;">
+          Outfit variations will appear here
+        </div>
+      </div>
+    </div>
+
+    <!-- Sağ Panel: Selected Model -->
+    <div class="vto-panel">
+      <div class="vto-panel-header">Selected Model</div>
+      <div class="vto-selected-model" id="vto-selected-model">
+        <div class="vto-placeholder">No model selected</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      let selectedProduct = null;
+      let selectedModel = null;
+      let selectedModelImage = null;
+
+      // Product selection
+      document.querySelectorAll('.vto-product-item').forEach(item => {
+        item.addEventListener('click', function() {
+          document.querySelectorAll('.vto-product-item').forEach(p => p.classList.remove('selected'));
+          this.classList.add('selected');
+          selectedProduct = {
+            id: this.dataset.productId,
+            image: this.dataset.productImage
+          };
+          updateGenerateButton();
+        });
+      });
+
+      // Model selection
+      document.querySelectorAll('.vto-model-item').forEach(item => {
+        item.addEventListener('click', function() {
+          document.querySelectorAll('.vto-model-item').forEach(m => m.classList.remove('selected'));
+          this.classList.add('selected');
+          
+          selectedModel = this.dataset.model;
+          selectedModelImage = this.querySelector('img').src;
+          
+          // Sağ panelde göster
+          document.getElementById('vto-selected-model').innerHTML = 
+            `<img src="${selectedModelImage}" alt="${selectedModel}">`;
+          
+          updateGenerateButton();
+        });
+      });
+
+      // Tab switching
+      document.querySelectorAll('.vto-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+          document.querySelectorAll('.vto-tab').forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          const tabName = this.dataset.tab;
+          document.getElementById('vto-model-tab').style.display = tabName === 'model' ? 'grid' : 'none';
+          document.getElementById('vto-outfit-tab').style.display = tabName === 'outfit' ? 'grid' : 'none';
+        });
+      });
+
+      // Generate button state
+      function updateGenerateButton() {
+        const btn = document.getElementById('vto-generate-btn');
+        if (selectedProduct && selectedModel) {
+          btn.disabled = false;
+        } else {
+          btn.disabled = true;
+        }
+      }
+
+      // Generate preview
+      document.getElementById('vto-generate-btn').addEventListener('click', async function() {
+        if (!selectedProduct || !selectedModel) return;
+        
+        const btn = this;
+        const resultArea = document.getElementById('vto-result-area');
+        
+        btn.disabled = true;
+        btn.textContent = 'Generating...';
+        resultArea.innerHTML = '<div class="vto-placeholder">Processing...</div>';
+        
+        try {
+          const response = await fetch('/apps/virtual-tryon/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              garment_image: selectedProduct.image,
+              model_image: selectedModelImage,
+              model_id: selectedModel
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success && data.result_url) {
+            resultArea.innerHTML = `<img src="${data.result_url}" alt="Result" style="max-width: 100%; border-radius: 4px;">`;
+          } else {
+            resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Generation failed: ${data.error || 'Unknown error'}</div>`;
+          }
+        } catch (error) {
+          resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Error: ${error.message}</div>`;
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Generate Preview';
+        }
+      });
+
+      // Search functionality
+      document.getElementById('vto-search-input').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        document.querySelectorAll('.vto-product-item').forEach(item => {
+          const title = item.querySelector('.vto-product-title').textContent.toLowerCase();
+          item.style.display = title.includes(searchTerm) ? 'block' : 'none';
+        });
+      });
+    })();
+  </script>
+</div>
+
 {% schema %}
 {
   "name": "Virtual Try-On",
   "target": "section",
-  "templates": ["product"],
   "settings": []
 }
 {% endschema %}
-
-<section class="tryon-section">
-  <div class="tryon-wrapper">
-    
-    <div class="tryon-header">
-      <h2>TRY IT ON</h2>
-      <p>Build your perfect outfit and see it come to life. Try styles on our models or on yourself, mix and match looks, and add your favorites to the cart.</p>
-      <p class="tryon-note">Note: The preview is AI-generated and may not be 100% accurate. No customer data is stored.</p>
-    </div>
-
-    <div class="tryon-grid">
-      
-      <!-- Left -->
-      <div class="tryon-col">
-        <div class="tryon-box">
-          <div class="tryon-box-title">
-            <span>Garment</span>
-          </div>
-          <div class="tryon-garment-display" id="garmentDisplay">
-            <p style="color: #999;">Loading product...</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Center -->
-      <div class="tryon-col tryon-col-center">
-        <div class="tryon-box">
-          <div class="tryon-box-title">
-            <span>Result</span>
-          </div>
-          <div class="tryon-result" id="result">
-            <p>Select a model to generate preview</p>
-          </div>
-          <button class="tryon-generate" id="generate">Generate Preview</button>
-        </div>
-
-        <div class="tryon-tabs">
-          <button class="tryon-tab active" data-tab="models">Model</button>
-          <button class="tryon-tab" data-tab="outfit">Outfit</button>
-        </div>
-
-        <div class="tryon-tab-content">
-          <div class="tryon-tab-panel active" id="models">
-            <div class="tryon-models" id="modelsGrid"></div>
-          </div>
-          <div class="tryon-tab-panel" id="outfit">
-            <div class="tryon-outfit">No items selected</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right -->
-      <div class="tryon-col">
-        <div class="tryon-box">
-          <div class="tryon-box-title">
-            <span>Selected Model</span>
-          </div>
-          <div class="tryon-selected-model" id="selectedModelDisplay">
-            <p style="color: #999; padding: 40px 20px; text-align: center;">No model selected</p>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<style>
-.tryon-section {
-  padding: 60px 20px;
-  background: #f8f9fa;
-}
-
-.tryon-wrapper {
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.tryon-header {
-  text-align: center;
-  margin-bottom: 48px;
-}
-
-.tryon-header h2 {
-  font-size: 48px;
-  font-weight: 800;
-  margin: 0 0 16px 0;
-  color: #111;
-}
-
-.tryon-header p {
-  font-size: 16px;
-  color: #666;
-  margin: 0 0 8px 0;
-}
-
-.tryon-note {
-  font-size: 14px;
-  color: #999;
-  font-style: italic;
-}
-
-.tryon-grid {
-  display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
-  gap: 24px;
-}
-
-.tryon-box {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.tryon-box-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #f3f4f6;
-  color: #111;
-}
-
-.tryon-search {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  display: none;
-}
-
-.tryon-garment-display {
-  min-height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-}
-
-.tryon-garment-image {
-  width: 100%;
-  max-width: 250px;
-  border-radius: 12px;
-  margin-bottom: 16px;
-}
-
-.tryon-garment-info {
-  text-align: center;
-}
-
-.tryon-garment-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #111;
-  margin-bottom: 8px;
-}
-
-.tryon-garment-price {
-  font-size: 15px;
-  color: #666;
-}
-
-.tryon-selected-model {
-  min-height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tryon-selected-model img {
-  width: 100%;
-  max-width: 250px;
-  border-radius: 12px;
-}
-
-.tryon-products {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.tryon-result {
-  min-height: 400px;
-  background: #f9fafb;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-  color: #999;
-}
-
-.tryon-result img {
-  width: 100%;
-  border-radius: 12px;
-}
-
-.tryon-generate {
-  width: 100%;
-  padding: 14px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.tryon-generate:hover {
-  background: #2563eb;
-}
-
-.tryon-col-center {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.tryon-tabs {
-  display: flex;
-  gap: 8px;
-  background: #f3f4f6;
-  padding: 4px;
-  border-radius: 8px;
-}
-
-.tryon-tab {
-  flex: 1;
-  padding: 10px;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  color: #666;
-  cursor: pointer;
-}
-
-.tryon-tab.active {
-  background: white;
-  color: #111;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.tryon-tab-content {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.tryon-tab-panel {
-  display: none;
-}
-
-.tryon-tab-panel.active {
-  display: block;
-}
-
-.tryon-models {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-.tryon-model {
-  aspect-ratio: 3/4;
-  border-radius: 8px;
-  overflow: hidden;
-  cursor: pointer;
-  border: 3px solid transparent;
-}
-
-.tryon-model:hover {
-  border-color: #e5e7eb;
-}
-
-.tryon-model.selected {
-  border-color: #3b82f6;
-}
-
-.tryon-model img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.tryon-outfit {
-  padding: 40px;
-  text-align: center;
-  color: #999;
-}
-
-.tryon-current {
-  min-height: 200px;
-  background: #f9fafb;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #999;
-}
-
-.tryon-cart {
-  width: 100%;
-  padding: 14px;
-  background: white;
-  color: #111;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.tryon-cart:hover {
-  background: #f9fafb;
-}
-
-@media (max-width: 1024px) {
-  .tryon-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
-
-<script>
-(function() {
-  const shopDomain = window.location.hostname;
-  const proxyBase = `https://${shopDomain}/apps/virtual-tryon`;
-  
-  const cloudinaryBase = 'https://res.cloudinary.com/ddec9wrgy/image/upload';
-  
-  const models = [
-    { id: 'male-1', name: 'Michael', img: `${cloudinaryBase}/v1/models/male-1.png` },
-    { id: 'male-2', name: 'James', img: `${cloudinaryBase}/v1/models/male-2.png` },
-    { id: 'male-3', name: 'David', img: `${cloudinaryBase}/v1/models/male-3.png` },
-    { id: 'male-4', name: 'Ryan', img: `${cloudinaryBase}/v1/models/male-4.png` },
-    { id: 'female-1', name: 'Emma', img: `${cloudinaryBase}/v1/models/female-1.png` },
-    { id: 'female-2', name: 'Sophia', img: `${cloudinaryBase}/v1/models/female-2.png` },
-    { id: 'female-3', name: 'Olivia', img: `${cloudinaryBase}/v1/models/female-3.png` },
-    { id: 'female-4', name: 'Isabella', img: `${cloudinaryBase}/v1/models/female-4.png` },
-    { id: 'female-5', name: 'Ava', img: `${cloudinaryBase}/v1/models/female-5.png` },
-    { id: 'male-5', name: 'Alex', img: `${cloudinaryBase}/v1/models/male-5.png` }
-  ];
-
-  let selectedModel = null;
-  let currentProductImage = null;
-
-  function init() {
-    renderModels();
-    renderGarment();
-    setupTabs();
-    setupGenerate();
-  }
-
-  function renderModels() {
-    const grid = document.getElementById('modelsGrid');
-    if (!grid) return;
-
-    grid.innerHTML = models.map(m => 
-      `<div class="tryon-model" data-id="${m.id}">
-        <img src="${m.img}" alt="${m.name}"
-             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27150%27 height=%27200%27%3E%3Crect fill=%27%23f3f4f6%27 width=%27150%27 height=%27200%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 text-anchor=%27middle%27 fill=%27%23999%27%3E${m.name}%3C/text%3E%3C/svg%3E'">
-      </div>`
-    ).join('');
-
-    grid.querySelectorAll('.tryon-model').forEach(card => {
-      card.addEventListener('click', function() {
-        grid.querySelectorAll('.tryon-model').forEach(c => c.classList.remove('selected'));
-        this.classList.add('selected');
-        selectedModel = models.find(m => m.id === this.dataset.id);
-        renderSelectedModel();
-      });
-    });
-  }
-
-  function renderGarment() {
-    const container = document.getElementById('garmentDisplay');
-    if (!container) return;
-
-    const productImage = document.querySelector('.product__media img')?.src ||
-                         document.querySelector('[data-product-featured-image]')?.src;
-    const productTitle = document.querySelector('.product__title')?.textContent ||
-                         document.querySelector('h1')?.textContent;
-    const productPrice = document.querySelector('.price')?.textContent;
-
-    currentProductImage = productImage;
-
-    if (productImage) {
-      container.innerHTML = `
-        <img src="${productImage}" class="tryon-garment-image" alt="Product">
-        <div class="tryon-garment-info">
-          <div class="tryon-garment-title">${productTitle || 'Current Product'}</div>
-          <div class="tryon-garment-price">${productPrice || ''}</div>
-        </div>
-      `;
-    } else {
-      container.innerHTML = '<p style="color: #999;">No product found</p>';
-    }
-  }
-
-  function renderSelectedModel() {
-    const container = document.getElementById('selectedModelDisplay');
-    if (!container) return;
-
-    if (selectedModel) {
-      container.innerHTML = `<img src="${selectedModel.img}" alt="${selectedModel.name}">`;
-    } else {
-      container.innerHTML = '<p style="color: #999; padding: 40px 20px; text-align: center;">No model selected</p>';
-    }
-  }
-
-  function setupTabs() {
-    document.querySelectorAll('.tryon-tab').forEach(tab => {
-      tab.addEventListener('click', function() {
-        const target = this.dataset.tab;
-        document.querySelectorAll('.tryon-tab').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        document.querySelectorAll('.tryon-tab-panel').forEach(p => p.classList.remove('active'));
-        document.getElementById(target).classList.add('active');
-      });
-    });
-  }
-
-  function setupGenerate() {
-    const btn = document.getElementById('generate');
-    if (!btn) return;
-
-    btn.addEventListener('click', async function() {
-      if (!selectedModel || !currentProductImage) {
-        alert('Please select a model first');
-        return;
-      }
-
-      const resultDiv = document.getElementById('result');
-      resultDiv.innerHTML = '<p>Generating preview...</p>';
-
-      try {
-        const response = await fetch(`${proxyBase}/generate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            modelImageUrl: selectedModel.img,
-            productImageUrl: currentProductImage
-          })
-        });
-
-        const result = await response.json();
-
-        if (result.success && result.imageUrl) {
-          resultDiv.innerHTML = `<img src="${result.imageUrl}" alt="Result">`;
-        } else {
-          throw new Error(result.error || 'Generation failed');
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        resultDiv.innerHTML = `<p style="color: #dc2626;">Error: ${error.message}</p>`;
-      }
-    });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-})();
-</script>
