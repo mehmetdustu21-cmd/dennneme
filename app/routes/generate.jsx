@@ -86,7 +86,7 @@ export async function action({ request }) {
           const statusData = await statusResponse.json();
           console.log(`[Generate] Status check ${attempts}:`, statusData);
           
-          if (statusData.status === "COMPLETED" && statusData.images && statusData.images.length > 0) {
+          if ((statusData.status === "COMPLETED" || statusData.images) && statusData.images && statusData.images.length > 0) {
             const imageUrl = statusData.images[0].url;
             console.log("[Generate] Found final image URL:", imageUrl);
             return Response.json({ 
