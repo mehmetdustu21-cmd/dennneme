@@ -1,22 +1,20 @@
-import { json } from "@remix-run/node";
-import { authenticate } from "../shopify.server";
-import fs from "fs";
-import path from "path";
+// App Proxy route handler - Resource Route (Server-only)
 
-// App Proxy route handler
 export async function loader({ request, params }) {
+  // Dinamik import - sadece server'da çalışır
+  const { json } = await import("@remix-run/node");
+  const fs = await import("fs");
+  const path = await import("path");
+  
   const url = new URL(request.url);
   const pathname = url.pathname;
   
   console.log("🔵 App Proxy Request:", {
     pathname,
     params,
-    url: url.toString(),
-    headers: Object.fromEntries(request.headers)
+    url: url.toString()
   });
 
-  // Extract the file path from the URL
-  // URL format: /api/proxy/models/male-1.png
   const filePath = pathname.replace('/api/proxy/', '');
   
   console.log("📁 Requested file:", filePath);
@@ -29,7 +27,6 @@ export async function loader({ request, params }) {
       
       console.log("🖼️ Looking for image at:", imagePath);
 
-      // Check if file exists
       if (fs.existsSync(imagePath)) {
         const imageBuffer = fs.readFileSync(imagePath);
         const ext = path.extname(fileName).toLowerCase();
@@ -57,7 +54,6 @@ export async function loader({ request, params }) {
       } else {
         console.error("❌ Image not found:", imagePath);
         
-        // Return a placeholder SVG
         const placeholder = `
           <svg xmlns="http://www.w3.org/2000/svg" width="400" height="600">
             <rect fill="#f3f4f6" width="400" height="600"/>
@@ -80,7 +76,7 @@ export async function loader({ request, params }) {
       }
     }
 
-    // Handle API endpoints (for future use)
+    // Handle API endpoints
     if (filePath.startsWith('api/')) {
       return json({
         success: true,
@@ -89,7 +85,6 @@ export async function loader({ request, params }) {
       });
     }
 
-    // Default response
     console.log("⚠️ Unknown proxy path:", filePath);
     return json({
       error: "Not Found",
@@ -101,14 +96,14 @@ export async function loader({ request, params }) {
     console.error("❌ Proxy error:", error);
     return json({
       error: "Internal Server Error",
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      message: error.message
     }, { status: 500 });
   }
 }
 
-// Handle POST requests if needed
 export async function action({ request }) {
+  const { json } = await import("@remix-run/node");
+  
   const url = new URL(request.url);
   const pathname = url.pathname;
   
@@ -117,12 +112,10 @@ export async function action({ request }) {
   try {
     const body = await request.json();
     
-    // Handle different API endpoints
     if (pathname.includes('/api/generate')) {
-      // Future: Handle virtual try-on generation
       return json({
         success: true,
-        message: "Generation endpoint (not implemented yet)"
+        message: "Generation endpoint"
       });
     }
 

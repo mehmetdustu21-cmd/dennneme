@@ -60,4 +60,8 @@ export default defineConfig({
   optimizeDeps: {
     include: ["@shopify/app-bridge-react"],
   },
+  // SSR build için external tanımla
+  ssr: {
+    noExternal: ["@shopify/shopify-app-remix"],
+  },
 });

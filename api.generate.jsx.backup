@@ -1,14 +1,21 @@
-import { json } from "@remix-run/node";
-import { authenticate } from "../shopify.server";
-import { generateVirtualTryOn } from "../services/fal.server";
-import db from "../db.server";
+// Resource route - Server-only API endpoint
+// NO static imports at the top!
 
 export async function action({ request }) {
   try {
+    // Tüm import'ları dinamik yap
+    const { json } = await import("@remix-run/node");
+    const { authenticate } = await import("../shopify.server.js");
+    const { generateVirtualTryOn } = await import("../services/fal.server.js");
+    const db = (await import("../db.server.js")).default;
+
     const { session } = await authenticate.public.appProxy(request);
     
     if (!session) {
-      return json({ error: "Unauthorized" }, { status: 401 });
+      return json({ 
+        success: false,
+        error: "Unauthorized" 
+      }, { status: 401 });
     }
 
     const body = await request.json();
@@ -22,6 +29,7 @@ export async function action({ request }) {
 
     if (!modelImageUrl || !productImageUrl) {
       return json({ 
+        success: false,
         error: "Missing required fields" 
       }, { status: 400 });
     }
@@ -45,11 +53,15 @@ export async function action({ request }) {
     });
 
     if (!shop) {
-      return json({ error: "Shop not found" }, { status: 404 });
+      return json({ 
+        success: false,
+        error: "Shop not found" 
+      }, { status: 404 });
     }
 
     if (shop.planType === "PAY_AS_YOU_GO" && shop.credits <= 0) {
       return json({ 
+        success: false,
         error: "Insufficient credits"
       }, { status: 402 });
     }
@@ -64,7 +76,7 @@ export async function action({ request }) {
         productType: productType || null,
         category: "tops",
         status: "COMPLETED",
-        metadata: result.metadata
+        metadata: result.metadata || {}
       }
     });
 
@@ -100,9 +112,41 @@ export async function action({ request }) {
   } catch (error) {
     console.error("❌ Generation error:", error);
     
+    const { json } = await import("@remix-run/node");
     return json({
       success: false,
       error: error.message || "Failed to generate virtual try-on"
+    }, { status: 500 });
+  }
+}
+
+export async function loader({ request }) {
+  try {
+    const { json } = await import("@remix-run/node");
+    const { authenticate } = await import("../shopify.server.js");
+
+    const { session } = await authenticate.public.appProxy(request);
+    
+    if (!session) {
+      return json({ 
+        success: false,
+        error: "Unauthorized" 
+      }, { status: 401 });
+    }
+
+    return json({
+      success: true,
+      message: "Virtual Try-On Generation API",
+      endpoints: {
+        POST: "/api/generate - Generate virtual try-on"
+      }
+    });
+
+  } catch (error) {
+    const { json } = await import("@remix-run/node");
+    return json({
+      success: false,
+      error: error.message
     }, { status: 500 });
   }
 }
