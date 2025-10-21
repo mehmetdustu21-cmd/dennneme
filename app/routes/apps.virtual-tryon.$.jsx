@@ -3,9 +3,11 @@
 
 // Using Response.json() instead of json() helper
 
-export async function loader({ params }) {
+export async function loader({ request, params }) {
   const requestPath = params["*"];
   console.log("[App Proxy] GET request path:", requestPath);
+  console.log("[App Proxy] Full URL:", request.url);
+  console.log("[App Proxy] Request method:", request.method);
 
   if (requestPath === "generate") {
     return Response.json({ error: "Use POST method for generation" }, { status: 405 });
@@ -17,6 +19,8 @@ export async function loader({ params }) {
 export async function action({ request, params }) {
   const requestPath = params["*"];
   console.log("[App Proxy] POST request path:", requestPath);
+  console.log("[App Proxy] Full URL:", request.url);
+  console.log("[App Proxy] Request method:", request.method);
   
   if (requestPath === "generate") {
     try {
