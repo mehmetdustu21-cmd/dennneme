@@ -70,7 +70,7 @@ export async function action({ request }) {
       
       // Status kontrolü yap
       let attempts = 0;
-      const maxAttempts = 30;
+      const maxAttempts = 60; // 60 saniye timeout
       
       while (attempts < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, 1000));
