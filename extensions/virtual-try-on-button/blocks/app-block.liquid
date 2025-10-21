@@ -214,26 +214,9 @@
       >
       
       <div class="vto-product-grid" id="vto-product-grid">
-        {% comment %} Mevcut koleksiyondan veya tüm ürünlerden ilk 20'sini göster {% endcomment %}
-        {% assign products_to_show = collections.all.products | default: all_products %}
-        
-        {% for product in products_to_show limit: 20 %}
-          {% if product.featured_image %}
-            <div class="vto-product-item" data-product-id="{{ product.id }}" data-product-image="{{ product.featured_image | img_url: 'large' }}">
-              <img src="{{ product.featured_image | img_url: 'medium' }}" alt="{{ product.title }}">
-              <div class="vto-product-info">
-                <p class="vto-product-title">{{ product.title }}</p>
-                <p class="vto-product-price">{{ product.price | money }}</p>
-              </div>
-            </div>
-          {% endif %}
-        {% endfor %}
-        
-        {% if products_to_show.size == 0 %}
-          <div class="vto-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-            No products found
-          </div>
-        {% endif %}
+        <div class="vto-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+          Loading products...
+        </div>
       </div>
     </div>
 
