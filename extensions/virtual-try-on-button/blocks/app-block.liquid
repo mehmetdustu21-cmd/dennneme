@@ -288,19 +288,83 @@
       let selectedProduct = null;
       let selectedModel = null;
       let selectedModelImage = null;
+      let allProducts = [];
 
-      // Product selection
-      document.querySelectorAll('.vto-product-item').forEach(item => {
-        item.addEventListener('click', function() {
-          document.querySelectorAll('.vto-product-item').forEach(p => p.classList.remove('selected'));
-          this.classList.add('selected');
-          selectedProduct = {
-            id: this.dataset.productId,
-            image: this.dataset.productImage
-          };
-          updateGenerateButton();
+      // Load products from Shopify
+      async function loadProducts() {
+        const productGrid = document.getElementById('vto-product-grid');
+        
+        try {
+          // Shopify'den ürünleri al
+          const response = await fetch('/collections/all/products.json?limit=20');
+          const data = await response.json();
+          
+          if (data.products && data.products.length > 0) {
+            allProducts = data.products;
+            renderProducts(data.products);
+          } else {
+            productGrid.innerHTML = '<div class="vto-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 40px;">No products found</div>';
+          }
+        } catch (error) {
+          console.error('Error loading products:', error);
+          productGrid.innerHTML = '<div class="vto-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: red;">Error loading products</div>';
+        }
+      }
+
+      // Render products in the grid
+      function renderProducts(products) {
+        const productGrid = document.getElementById('vto-product-grid');
+        
+        if (products.length === 0) {
+          productGrid.innerHTML = '<div class="vto-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 40px;">No products found</div>';
+          return;
+        }
+
+        const productsHTML = products.map(product => {
+          const image = product.images && product.images.length > 0 
+            ? product.images[0].src 
+            : 'https://via.placeholder.com/300x300?text=No+Image';
+          
+          const price = product.variants && product.variants.length > 0 
+            ? `$${parseFloat(product.variants[0].price / 100).toFixed(2)}`
+            : 'N/A';
+
+          return `
+            <div class="vto-product-item" 
+                 data-product-id="${product.id}" 
+                 data-product-image="${image}">
+              <img src="${image}" alt="${product.title}" loading="lazy">
+              <div class="vto-product-info">
+                <div class="vto-product-title">${product.title}</div>
+                <div class="vto-product-price">${price}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        productGrid.innerHTML = productsHTML;
+        
+        // Re-attach event listeners for new products
+        attachProductListeners();
+      }
+
+      // Attach click listeners to product items
+      function attachProductListeners() {
+        document.querySelectorAll('.vto-product-item').forEach(item => {
+          item.addEventListener('click', function() {
+            document.querySelectorAll('.vto-product-item').forEach(p => p.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedProduct = {
+              id: this.dataset.productId,
+              image: this.dataset.productImage
+            };
+            updateGenerateButton();
+          });
         });
-      });
+      }
+
+      // Initialize products when page loads
+      loadProducts();
 
       // Model selection
       document.querySelectorAll('.vto-model-item').forEach(item => {
@@ -365,15 +429,38 @@
             })
           });
           
-          const data = await response.json();
+          console.log('Response status:', response.status);
+          console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+          
+          // Response'un JSON olup olmadığını kontrol et
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            const textResponse = await response.text();
+            console.error('Non-JSON response:', textResponse);
+            resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Server error: Invalid response format</div>`;
+            return;
+          }
+          
+          let data;
+          try {
+            data = await response.json();
+            console.log('Response data:', data);
+          } catch (jsonError) {
+            console.error('JSON parse error:', jsonError);
+            resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Server error: Failed to parse response</div>`;
+            return;
+          }
           
           if (data.success && data.result_url) {
             resultArea.innerHTML = `<img src="${data.result_url}" alt="Result" style="max-width: 100%; border-radius: 4px;">`;
           } else {
-            resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Generation failed: ${data.error || 'Unknown error'}</div>`;
+            const errorMsg = data.error || 'Unknown error';
+            console.error('Generation failed:', errorMsg);
+            resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Generation failed: ${errorMsg}</div>`;
           }
         } catch (error) {
-          resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Error: ${error.message}</div>`;
+          console.error('Network error:', error);
+          resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Network error: ${error.message}</div>`;
         } finally {
           btn.disabled = false;
           btn.textContent = 'Generate Preview';
@@ -383,10 +470,17 @@
       // Search functionality
       document.getElementById('vto-search-input').addEventListener('input', function(e) {
         const searchTerm = e.target.value.toLowerCase();
-        document.querySelectorAll('.vto-product-item').forEach(item => {
-          const title = item.querySelector('.vto-product-title').textContent.toLowerCase();
-          item.style.display = title.includes(searchTerm) ? 'block' : 'none';
-        });
+        
+        if (searchTerm === '') {
+          // Show all products
+          renderProducts(allProducts);
+        } else {
+          // Filter products
+          const filteredProducts = allProducts.filter(product => 
+            product.title.toLowerCase().includes(searchTerm)
+          );
+          renderProducts(filteredProducts);
+        }
       });
     })();
   </script>

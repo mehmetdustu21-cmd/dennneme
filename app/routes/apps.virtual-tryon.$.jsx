@@ -1,16 +1,11 @@
-// app/routes/api.proxy.$.jsx
-// Sadece generate endpoint için - modeller artık Cloudinary'de
+// app/routes/apps.virtual-tryon.$.jsx
+// Shopify App Proxy route - /apps/virtual-tryon/*
 
 // Using Response.json() instead of json() helper
 
-// Bu dosyanın sadece server-side çalışacağını belirt
-export const config = {
-  runtime: 'nodejs'
-};
-
 export async function loader({ params }) {
   const requestPath = params["*"];
-  console.log("[Proxy] GET request path:", requestPath);
+  console.log("[App Proxy] GET request path:", requestPath);
 
   if (requestPath === "generate") {
     return Response.json({ error: "Use POST method for generation" }, { status: 405 });
@@ -21,19 +16,19 @@ export async function loader({ params }) {
 
 export async function action({ request, params }) {
   const requestPath = params["*"];
-  console.log("[Proxy] POST request path:", requestPath);
+  console.log("[App Proxy] POST request path:", requestPath);
   
   if (requestPath === "generate") {
     try {
       const body = await request.json();
       const { garment_image, model_image, model_id } = body;
-
-      console.log("[Proxy] Generate request:", { 
+      
+      console.log("[App Proxy] Generate request:", { 
         garment: garment_image?.substring(0, 50), 
         model: model_id 
       });
 
-      // fal.ai API'ye istek yap - DOĞRU ENDPOINT VE PARAMETRELER
+      // fal.ai API'ye istek yap
       const response = await fetch("https://queue.fal.run/fal-ai/image-apps-v2/virtual-try-on", {
         method: "POST",
         headers: {
@@ -47,55 +42,52 @@ export async function action({ request, params }) {
         }),
       });
 
-      console.log("[Proxy] fal.ai response status:", response.status);
-      console.log("[Proxy] fal.ai response headers:", Object.fromEntries(response.headers.entries()));
+      console.log("[App Proxy] fal.ai response status:", response.status);
 
-      // Response'u text olarak al ve sonra JSON'a çevirmeye çalış
+      // Response'u text olarak al
       let responseText;
       try {
         responseText = await response.text();
-        console.log("[Proxy] Raw response from fal.ai:", responseText.substring(0, 500) + "...");
+        console.log("[App Proxy] Raw response from fal.ai:", responseText.substring(0, 500) + "...");
       } catch (textError) {
-        console.error("[Proxy] Failed to read response text:", textError);
+        console.error("[App Proxy] Failed to read response text:", textError);
         return Response.json({ 
           success: false, 
           error: "Failed to read response from AI service" 
         }, { status: 500 });
       }
 
-      // Response status kontrolü (text okuduktan sonra)
       if (!response.ok) {
-        console.error("[Proxy] fal.ai API error - Status:", response.status, "Response:", responseText);
+        console.error("[App Proxy] fal.ai API error - Status:", response.status, "Response:", responseText);
         return Response.json({ 
           success: false, 
           error: `API error: ${response.status} - ${responseText.substring(0, 200)}` 
         }, { status: response.status });
       }
 
-      // JSON parse etmeye çalış
+      // JSON parse et
       let result;
       try {
         result = JSON.parse(responseText);
-        console.log("[Proxy] fal.ai response data:", JSON.stringify(result, null, 2));
+        console.log("[App Proxy] fal.ai response data:", JSON.stringify(result, null, 2));
       } catch (jsonError) {
-        console.error("[Proxy] JSON parse error:", jsonError);
-        console.error("[Proxy] Raw response that failed to parse:", responseText);
+        console.error("[App Proxy] JSON parse error:", jsonError);
         return Response.json({ 
           success: false, 
-          error: "Failed to parse response from AI service. Raw response: " + responseText.substring(0, 200) 
+          error: "Failed to parse response from AI service" 
         }, { status: 500 });
       }
 
-      // FAL.ai API'si önce request_id döndürüyor, sonra status kontrolü yapmamız gerekiyor
+      // Request ID varsa status kontrolü yap
       if (result.request_id) {
-        console.log("[Proxy] Got request_id:", result.request_id);
+        console.log("[App Proxy] Got request_id:", result.request_id);
         
-        // Request status'unu kontrol et ve sonucu bekle
+        // Status kontrolü yap
         let attempts = 0;
-        const maxAttempts = 30; // 30 saniye timeout
+        const maxAttempts = 30;
         
         while (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // 1 saniye bekle
+          await new Promise(resolve => setTimeout(resolve, 1000));
           attempts++;
           
           try {
@@ -106,17 +98,17 @@ export async function action({ request, params }) {
             });
             
             const statusData = await statusResponse.json();
-            console.log(`[Proxy] Status check ${attempts}:`, statusData);
+            console.log(`[App Proxy] Status check ${attempts}:`, statusData);
             
             if (statusData.status === "COMPLETED" && statusData.images && statusData.images.length > 0) {
               const imageUrl = statusData.images[0].url;
-              console.log("[Proxy] Found final image URL:", imageUrl);
+              console.log("[App Proxy] Found final image URL:", imageUrl);
               return Response.json({ 
                 success: true, 
                 result_url: imageUrl 
               });
             } else if (statusData.status === "FAILED") {
-              console.error("[Proxy] Request failed:", statusData);
+              console.error("[App Proxy] Request failed:", statusData);
               return Response.json({ 
                 success: false, 
                 error: statusData.error || "Request failed" 
@@ -124,7 +116,7 @@ export async function action({ request, params }) {
             }
             
           } catch (statusError) {
-            console.error(`[Proxy] Status check error ${attempts}:`, statusError);
+            console.error(`[App Proxy] Status check error ${attempts}:`, statusError);
           }
         }
         
@@ -135,48 +127,37 @@ export async function action({ request, params }) {
         }, { status: 408 });
         
       } else {
-        // Eğer request_id yoksa, direkt result kontrolü yap
-        console.log("[Proxy] No request_id, checking direct result structure:", Object.keys(result));
-        
+        // Direkt result kontrolü
         let imageUrl = null;
         
-        // Farklı response formatlarını kontrol et
         if (result.images && result.images.length > 0 && result.images[0].url) {
           imageUrl = result.images[0].url;
         } else if (result.image?.url) {
           imageUrl = result.image.url;
-        } else if (result.data?.images && result.data.images.length > 0 && result.data.images[0].url) {
-          imageUrl = result.data.images[0].url;
-        } else if (result.data?.image?.url) {
-          imageUrl = result.data.image.url;
-        } else if (result.url) {
-          imageUrl = result.url;
-        } else if (result.result?.url) {
-          imageUrl = result.result.url;
         }
         
         if (imageUrl) {
-          console.log("[Proxy] Found direct image URL:", imageUrl);
+          console.log("[App Proxy] Found direct image URL:", imageUrl);
           return Response.json({ 
             success: true, 
             result_url: imageUrl 
           });
         } else {
-          console.error("[Proxy] No image found in result. Full result:", JSON.stringify(result, null, 2));
+          console.error("[App Proxy] No image found in result:", result);
           return Response.json({ 
             success: false, 
-            error: result.error || result.message || result.detail || "No result image returned. Response structure: " + JSON.stringify(result, null, 2).substring(0, 500)
+            error: "No result image returned" 
           }, { status: 400 });
         }
       }
     } catch (error) {
-      console.error("[Proxy] Generation error:", error);
+      console.error("[App Proxy] Generation error:", error);
       return Response.json({ 
         success: false, 
         error: error.message 
       }, { status: 500 });
     }
   }
-
-  return Response.json({ error: "Method not allowed" }, { status: 405 });
+  
+  return Response.json({ error: "Not Found" }, { status: 404 });
 }
