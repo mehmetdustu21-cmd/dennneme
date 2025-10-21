@@ -22,10 +22,11 @@
       <div class="tryon-col">
         <div class="tryon-box">
           <div class="tryon-box-title">
-            <span>Browse</span>
+            <span>Garment</span>
           </div>
-          <input type="text" class="tryon-search" placeholder="Search for products...">
-          <div class="tryon-products" id="products"></div>
+          <div class="tryon-garment-display" id="garmentDisplay">
+            <p style="color: #999;">Loading product...</p>
+          </div>
         </div>
       </div>
 
@@ -60,10 +61,11 @@
       <div class="tryon-col">
         <div class="tryon-box">
           <div class="tryon-box-title">
-            <span>Outfit</span>
+            <span>Selected Model</span>
           </div>
-          <div class="tryon-current" id="current"></div>
-          <button class="tryon-cart">Add outfit to cart</button>
+          <div class="tryon-selected-model" id="selectedModelDisplay">
+            <p style="color: #999; padding: 40px 20px; text-align: center;">No model selected</p>
+          </div>
         </div>
       </div>
 
@@ -134,6 +136,51 @@
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   margin-bottom: 20px;
+  display: none;
+}
+
+.tryon-garment-display {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.tryon-garment-image {
+  width: 100%;
+  max-width: 250px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.tryon-garment-info {
+  text-align: center;
+}
+
+.tryon-garment-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 8px;
+}
+
+.tryon-garment-price {
+  font-size: 15px;
+  color: #666;
+}
+
+.tryon-selected-model {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tryon-selected-model img {
+  width: 100%;
+  max-width: 250px;
+  border-radius: 12px;
 }
 
 .tryon-products {
@@ -293,15 +340,19 @@
   const shopDomain = window.location.hostname;
   const proxyBase = `https://${shopDomain}/apps/virtual-tryon`;
   
+  const cloudinaryBase = 'https://res.cloudinary.com/ddec9wrgy/image/upload';
+  
   const models = [
-    { id: 'male-1', name: 'Michael', img: `${proxyBase}/models/male-1.png` },
-    { id: 'male-2', name: 'James', img: `${proxyBase}/models/male-2.png` },
-    { id: 'male-3', name: 'David', img: `${proxyBase}/models/male-3.png` },
-    { id: 'male-4', name: 'Ryan', img: `${proxyBase}/models/male-4.png` },
-    { id: 'female-1', name: 'Emma', img: `${proxyBase}/models/female-1.png` },
-    { id: 'female-2', name: 'Sophia', img: `${proxyBase}/models/female-2.png` },
-    { id: 'female-3', name: 'Olivia', img: `${proxyBase}/models/female-3.png` },
-    { id: 'female-4', name: 'Isabella', img: `${proxyBase}/models/female-4.png` }
+    { id: 'male-1', name: 'Michael', img: `${cloudinaryBase}/v1/models/male-1.png` },
+    { id: 'male-2', name: 'James', img: `${cloudinaryBase}/v1/models/male-2.png` },
+    { id: 'male-3', name: 'David', img: `${cloudinaryBase}/v1/models/male-3.png` },
+    { id: 'male-4', name: 'Ryan', img: `${cloudinaryBase}/v1/models/male-4.png` },
+    { id: 'female-1', name: 'Emma', img: `${cloudinaryBase}/v1/models/female-1.png` },
+    { id: 'female-2', name: 'Sophia', img: `${cloudinaryBase}/v1/models/female-2.png` },
+    { id: 'female-3', name: 'Olivia', img: `${cloudinaryBase}/v1/models/female-3.png` },
+    { id: 'female-4', name: 'Isabella', img: `${cloudinaryBase}/v1/models/female-4.png` },
+    { id: 'female-5', name: 'Ava', img: `${cloudinaryBase}/v1/models/female-5.png` },
+    { id: 'male-5', name: 'Alex', img: `${cloudinaryBase}/v1/models/male-5.png` }
   ];
 
   let selectedModel = null;
@@ -309,7 +360,7 @@
 
   function init() {
     renderModels();
-    renderCurrentProduct();
+    renderGarment();
     setupTabs();
     setupGenerate();
   }
@@ -330,12 +381,13 @@
         grid.querySelectorAll('.tryon-model').forEach(c => c.classList.remove('selected'));
         this.classList.add('selected');
         selectedModel = models.find(m => m.id === this.dataset.id);
+        renderSelectedModel();
       });
     });
   }
 
-  function renderCurrentProduct() {
-    const container = document.getElementById('current');
+  function renderGarment() {
+    const container = document.getElementById('garmentDisplay');
     if (!container) return;
 
     const productImage = document.querySelector('.product__media img')?.src ||
@@ -348,14 +400,25 @@
 
     if (productImage) {
       container.innerHTML = `
-        <div style="text-align: center;">
-          <img src="${productImage}" style="width: 100%; max-width: 200px; border-radius: 8px; margin-bottom: 12px;">
-          <div style="font-size: 14px; font-weight: 600; color: #111; margin-bottom: 4px;">${productTitle || 'Current Product'}</div>
-          <div style="font-size: 13px; color: #666;">${productPrice || ''}</div>
+        <img src="${productImage}" class="tryon-garment-image" alt="Product">
+        <div class="tryon-garment-info">
+          <div class="tryon-garment-title">${productTitle || 'Current Product'}</div>
+          <div class="tryon-garment-price">${productPrice || ''}</div>
         </div>
       `;
     } else {
       container.innerHTML = '<p style="color: #999;">No product found</p>';
+    }
+  }
+
+  function renderSelectedModel() {
+    const container = document.getElementById('selectedModelDisplay');
+    if (!container) return;
+
+    if (selectedModel) {
+      container.innerHTML = `<img src="${selectedModel.img}" alt="${selectedModel.name}">`;
+    } else {
+      container.innerHTML = '<p style="color: #999; padding: 40px 20px; text-align: center;">No model selected</p>';
     }
   }
 
