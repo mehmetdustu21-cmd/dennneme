@@ -2,385 +2,287 @@
 {
   "name": "Virtual Try-On",
   "target": "section",
-  "settings": [
-    {
-      "type": "text",
-      "id": "button_text",
-      "label": "Button Text",
-      "default": "TRY IT ON"
-    },
-    {
-      "type": "color",
-      "id": "button_color",
-      "label": "Button Color",
-      "default": "#000000"
-    }
-  ]
+  "templates": ["product"],
+  "settings": []
 }
 {% endschema %}
 
-<div class="virtual-tryon-container">
-  <button class="virtual-tryon-button" id="virtualTryonBtn">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
-      <circle cx="12" cy="12" r="3" fill="currentColor"/>
-    </svg>
-    {{ block.settings.button_text }}
-  </button>
-</div>
-
-<div id="virtualTryonModal" class="vto-modal">
-  <div class="vto-modal-content">
-    <div class="vto-modal-header">
-      <h2>Virtual Try-On</h2>
-      <button class="vto-close" id="closeModal">&times;</button>
-    </div>
+<section class="tryon-section">
+  <div class="tryon-wrapper">
     
-    <div class="vto-modal-body">
-      <!-- Browse Panel -->
-      <div class="vto-panel" id="browsePanel">
-        <div class="vto-gender-tabs">
-          <button class="vto-tab active" data-gender="all">All</button>
-          <button class="vto-tab" data-gender="male">Male</button>
-          <button class="vto-tab" data-gender="female">Female</button>
-        </div>
-        
-        <div class="vto-models-grid" id="modelsGrid"></div>
-        
-        <div class="vto-upload-section">
-          <button class="vto-upload-btn" id="uploadBtn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M12 4v16m8-8H4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            Upload Your Photo
-          </button>
-          <input type="file" id="photoUpload" accept="image/*" style="display: none;">
-        </div>
-      </div>
+    <div class="tryon-header">
+      <h2>TRY IT ON</h2>
+      <p>Build your perfect outfit and see it come to life. Try styles on our models or on yourself, mix and match looks, and add your favorites to the cart.</p>
+      <p class="tryon-note">Note: The preview is AI-generated and may not be 100% accurate. No customer data is stored.</p>
+    </div>
+
+    <div class="tryon-grid">
       
-      <!-- Result Panel -->
-      <div class="vto-panel" id="resultPanel" style="display: none;">
-        <div class="vto-result-header">
-          <button class="vto-back-btn" id="backBtn">← Back</button>
-          <div class="vto-result-actions">
-            <button class="vto-action-btn" id="downloadBtn">Download</button>
-            <button class="vto-action-btn vto-action-primary" id="addToCartBtn">Add to Cart</button>
+      <!-- Left -->
+      <div class="tryon-col">
+        <div class="tryon-box">
+          <div class="tryon-box-title">
+            <span>Browse</span>
           </div>
+          <input type="text" class="tryon-search" placeholder="Search for products...">
+          <div class="tryon-products" id="products"></div>
         </div>
-        
-        <div class="vto-comparison">
-          <div class="vto-image-container">
-            <img id="originalImage" class="vto-result-image">
-            <div class="vto-image-label">Original Model</div>
-          </div>
-          <div class="vto-image-container">
-            <img id="generatedImage" class="vto-result-image">
-            <div class="vto-image-label">With Product</div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Loading State -->
-      <div class="vto-loading" id="loadingState" style="display: none;">
-        <div class="vto-spinner"></div>
-        <p id="loadingText">Creating your virtual try-on...</p>
-        <p class="vto-loading-subtext">This may take 10-20 seconds</p>
       </div>
 
-      <!-- Error State -->
-      <div class="vto-error" id="errorState" style="display: none;">
-        <div class="vto-error-icon">⚠️</div>
-        <h3>Generation Failed</h3>
-        <p id="errorMessage"></p>
-        <button class="vto-action-btn" id="retryBtn">Try Again</button>
+      <!-- Center -->
+      <div class="tryon-col tryon-col-center">
+        <div class="tryon-box">
+          <div class="tryon-box-title">
+            <span>Result</span>
+          </div>
+          <div class="tryon-result" id="result">
+            <p>Select a model to generate preview</p>
+          </div>
+          <button class="tryon-generate" id="generate">Generate Preview</button>
+        </div>
+
+        <div class="tryon-tabs">
+          <button class="tryon-tab active" data-tab="models">Model</button>
+          <button class="tryon-tab" data-tab="outfit">Outfit</button>
+        </div>
+
+        <div class="tryon-tab-content">
+          <div class="tryon-tab-panel active" id="models">
+            <div class="tryon-models" id="modelsGrid"></div>
+          </div>
+          <div class="tryon-tab-panel" id="outfit">
+            <div class="tryon-outfit">No items selected</div>
+          </div>
+        </div>
       </div>
+
+      <!-- Right -->
+      <div class="tryon-col">
+        <div class="tryon-box">
+          <div class="tryon-box-title">
+            <span>Outfit</span>
+          </div>
+          <div class="tryon-current" id="current"></div>
+          <button class="tryon-cart">Add outfit to cart</button>
+        </div>
+      </div>
+
     </div>
   </div>
-</div>
+</section>
 
 <style>
-.virtual-tryon-container {
-  margin: 20px 0;
+.tryon-section {
+  padding: 60px 20px;
+  background: #f8f9fa;
 }
 
-.virtual-tryon-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: {{ block.settings.button_color }};
-  color: white;
-  border: none;
-  border-radius: 8px;
+.tryon-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.tryon-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.tryon-header h2 {
+  font-size: 48px;
+  font-weight: 800;
+  margin: 0 0 16px 0;
+  color: #111;
+}
+
+.tryon-header p {
   font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  color: #666;
+  margin: 0 0 8px 0;
 }
 
-.virtual-tryon-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+.tryon-note {
+  font-size: 14px;
+  color: #999;
+  font-style: italic;
 }
 
-.vto-modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.7);
-  z-index: 10000;
-  backdrop-filter: blur(4px);
-}
-
-.vto-modal.active {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.vto-modal-content {
-  background: white;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 1000px;
-  max-height: 90vh;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-}
-
-.vto-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.vto-modal-header h2 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.vto-close {
-  background: none;
-  border: none;
-  font-size: 32px;
-  cursor: pointer;
-  color: #6b7280;
-  line-height: 1;
-}
-
-.vto-modal-body {
-  padding: 24px;
-  max-height: calc(90vh - 80px);
-  overflow-y: auto;
-}
-
-.vto-gender-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-}
-
-.vto-tab {
-  padding: 8px 24px;
-  background: #f3f4f6;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.vto-tab.active {
-  background: #000;
-  color: white;
-}
-
-.vto-models-grid {
+.tryon-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.vto-model-card {
-  cursor: pointer;
-  border-radius: 12px;
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: 2px solid transparent;
-}
-
-.vto-model-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-}
-
-.vto-model-card.selected {
-  border-color: #000;
-}
-
-.vto-model-image {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-}
-
-.vto-model-name {
-  padding: 12px;
-  text-align: center;
-  font-weight: 600;
-  background: #f9fafb;
-}
-
-.vto-upload-section {
-  text-align: center;
-  padding: 24px;
-  background: #f9fafb;
-  border-radius: 12px;
-}
-
-.vto-upload-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: white;
-  border: 2px dashed #d1d5db;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.vto-upload-btn:hover {
-  border-color: #000;
-  background: #f9fafb;
-}
-
-.vto-result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.vto-back-btn {
-  padding: 8px 16px;
-  background: #f3f4f6;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.vto-result-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.vto-action-btn {
-  padding: 10px 20px;
-  border: 2px solid #000;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  background: white;
-  transition: all 0.2s;
-}
-
-.vto-action-primary {
-  background: #000;
-  color: white;
-}
-
-.vto-comparison {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 2fr 1fr;
   gap: 24px;
 }
 
-.vto-image-container {
-  position: relative;
+.tryon-box {
+  background: white;
   border-radius: 12px;
-  overflow: hidden;
-  background: #f9fafb;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.vto-result-image {
+.tryon-box-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f3f4f6;
+  color: #111;
+}
+
+.tryon-search {
   width: 100%;
-  height: auto;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.tryon-products {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.tryon-result {
+  min-height: 400px;
+  background: #f9fafb;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  color: #999;
+}
+
+.tryon-result img {
+  width: 100%;
+  border-radius: 12px;
+}
+
+.tryon-generate {
+  width: 100%;
+  padding: 14px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tryon-generate:hover {
+  background: #2563eb;
+}
+
+.tryon-col-center {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tryon-tabs {
+  display: flex;
+  gap: 8px;
+  background: #f3f4f6;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.tryon-tab {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+}
+
+.tryon-tab.active {
+  background: white;
+  color: #111;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.tryon-tab-content {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.tryon-tab-panel {
+  display: none;
+}
+
+.tryon-tab-panel.active {
   display: block;
 }
 
-.vto-image-label {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 12px;
-  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-  color: white;
+.tryon-models {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.tryon-model {
+  aspect-ratio: 3/4;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 3px solid transparent;
+}
+
+.tryon-model:hover {
+  border-color: #e5e7eb;
+}
+
+.tryon-model.selected {
+  border-color: #3b82f6;
+}
+
+.tryon-model img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tryon-outfit {
+  padding: 40px;
+  text-align: center;
+  color: #999;
+}
+
+.tryon-current {
+  min-height: 200px;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+}
+
+.tryon-cart {
+  width: 100%;
+  padding: 14px;
+  background: white;
+  color: #111;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
   font-weight: 600;
-  text-align: center;
+  cursor: pointer;
 }
 
-.vto-loading {
-  text-align: center;
-  padding: 60px 24px;
+.tryon-cart:hover {
+  background: #f9fafb;
 }
 
-.vto-spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid #f3f4f6;
-  border-top-color: #000;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
-}
-
-.vto-loading-subtext {
-  color: #6b7280;
-  font-size: 14px;
-  margin-top: 8px;
-}
-
-.vto-error {
-  text-align: center;
-  padding: 60px 24px;
-}
-
-.vto-error-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-}
-
-.vto-error h3 {
-  margin: 0 0 12px 0;
-  font-size: 24px;
-}
-
-.vto-error p {
-  color: #6b7280;
-  margin-bottom: 24px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@media (max-width: 768px) {
-  .vto-models-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  }
-  
-  .vto-comparison {
+@media (max-width: 1024px) {
+  .tryon-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -392,191 +294,124 @@
   const proxyBase = `https://${shopDomain}/apps/virtual-tryon`;
   
   const models = [
-    { id: 'male-1', name: 'Michael', image: `${proxyBase}/models/male-1.png`, gender: 'male' },
-    { id: 'male-2', name: 'James', image: `${proxyBase}/models/male-2.png`, gender: 'male' },
-    { id: 'male-3', name: 'David', image: `${proxyBase}/models/male-3.png`, gender: 'male' },
-    { id: 'male-4', name: 'Ryan', image: `${proxyBase}/models/male-4.png`, gender: 'male' },
-    { id: 'male-5', name: 'Alex', image: `${proxyBase}/models/male-5.png`, gender: 'male' },
-    { id: 'female-1', name: 'Emma', image: `${proxyBase}/models/female-1.png`, gender: 'female' },
-    { id: 'female-2', name: 'Sophia', image: `${proxyBase}/models/female-2.png`, gender: 'female' },
-    { id: 'female-3', name: 'Olivia', image: `${proxyBase}/models/female-3.png`, gender: 'female' },
-    { id: 'female-4', name: 'Isabella', image: `${proxyBase}/models/female-4.png`, gender: 'female' },
-    { id: 'female-5', name: 'Ava', image: `${proxyBase}/models/female-5.png`, gender: 'female' }
+    { id: 'male-1', name: 'Michael', img: `${proxyBase}/models/male-1.png` },
+    { id: 'male-2', name: 'James', img: `${proxyBase}/models/male-2.png` },
+    { id: 'male-3', name: 'David', img: `${proxyBase}/models/male-3.png` },
+    { id: 'male-4', name: 'Ryan', img: `${proxyBase}/models/male-4.png` },
+    { id: 'female-1', name: 'Emma', img: `${proxyBase}/models/female-1.png` },
+    { id: 'female-2', name: 'Sophia', img: `${proxyBase}/models/female-2.png` },
+    { id: 'female-3', name: 'Olivia', img: `${proxyBase}/models/female-3.png` },
+    { id: 'female-4', name: 'Isabella', img: `${proxyBase}/models/female-4.png` }
   ];
 
   let selectedModel = null;
-  let currentGender = 'all';
   let currentProductImage = null;
-  let currentProductId = null;
-  let currentProductType = null;
 
-  const modal = document.getElementById('virtualTryonModal');
-  const openBtn = document.getElementById('virtualTryonBtn');
-  const closeBtn = document.getElementById('closeModal');
-  const modelsGrid = document.getElementById('modelsGrid');
-  const browsePanel = document.getElementById('browsePanel');
-  const resultPanel = document.getElementById('resultPanel');
-  const loadingState = document.getElementById('loadingState');
-  const errorState = document.getElementById('errorState');
-  const backBtn = document.getElementById('backBtn');
-  const uploadBtn = document.getElementById('uploadBtn');
-  const photoUpload = document.getElementById('photoUpload');
-  const retryBtn = document.getElementById('retryBtn');
-
-  function getCurrentProductInfo() {
-    const productImage = document.querySelector('.product__media img')?.src || 
-                         document.querySelector('[data-product-featured-image]')?.src ||
-                         document.querySelector('.product-single__photo img')?.src;
-    const productId = document.querySelector('[data-product-id]')?.dataset?.productId;
-    const productType = document.querySelector('[data-product-type]')?.dataset?.productType;
-    
-    return { productImage, productId, productType };
-  }
-
-  openBtn.addEventListener('click', function() {
-    const productInfo = getCurrentProductInfo();
-    currentProductImage = productInfo.productImage;
-    currentProductId = productInfo.productId;
-    currentProductType = productInfo.productType;
-    
-    if (!currentProductImage) {
-      alert('Product image not found. Please make sure you are on a product page.');
-      return;
-    }
-    
-    modal.classList.add('active');
+  function init() {
     renderModels();
-  });
-
-  closeBtn.addEventListener('click', () => modal.classList.remove('active'));
-  
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.classList.remove('active');
-  });
-
-  document.querySelectorAll('.vto-tab').forEach(tab => {
-    tab.addEventListener('click', function() {
-      document.querySelectorAll('.vto-tab').forEach(t => t.classList.remove('active'));
-      this.classList.add('active');
-      currentGender = this.dataset.gender;
-      renderModels();
-    });
-  });
+    renderCurrentProduct();
+    setupTabs();
+    setupGenerate();
+  }
 
   function renderModels() {
-    const filteredModels = currentGender === 'all' 
-      ? models 
-      : models.filter(m => m.gender === currentGender);
-    
-    modelsGrid.innerHTML = filteredModels.map(model => `
-      <div class="vto-model-card" data-model-id="${model.id}">
-        <img src="${model.image}" alt="${model.name}" class="vto-model-image" 
-             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27150%27 height=%27200%27%3E%3Crect fill=%27%23f3f4f6%27 width=%27150%27 height=%27200%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 text-anchor=%27middle%27 dy=%27.3em%27 fill=%27%239ca3af%27%3E${model.name}%3C/text%3E%3C/svg%3E'">
-        <div class="vto-model-name">${model.name}</div>
-      </div>
-    `).join('');
+    const grid = document.getElementById('modelsGrid');
+    if (!grid) return;
 
-    document.querySelectorAll('.vto-model-card').forEach(card => {
+    grid.innerHTML = models.map(m => 
+      `<div class="tryon-model" data-id="${m.id}">
+        <img src="${m.img}" alt="${m.name}"
+             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27150%27 height=%27200%27%3E%3Crect fill=%27%23f3f4f6%27 width=%27150%27 height=%27200%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 text-anchor=%27middle%27 fill=%27%23999%27%3E${m.name}%3C/text%3E%3C/svg%3E'">
+      </div>`
+    ).join('');
+
+    grid.querySelectorAll('.tryon-model').forEach(card => {
       card.addEventListener('click', function() {
-        document.querySelectorAll('.vto-model-card').forEach(c => c.classList.remove('selected'));
+        grid.querySelectorAll('.tryon-model').forEach(c => c.classList.remove('selected'));
         this.classList.add('selected');
-        selectedModel = models.find(m => m.id === this.dataset.modelId);
-        generateTryOn();
+        selectedModel = models.find(m => m.id === this.dataset.id);
       });
     });
   }
 
-  uploadBtn.addEventListener('click', () => photoUpload.click());
-  
-  photoUpload.addEventListener('change', function(e) {
-    if (e.target.files.length > 0) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        selectedModel = {
-          id: 'custom',
-          name: 'Your Photo',
-          image: event.target.result,
-          gender: 'custom'
-        };
-        generateTryOn();
-      };
-      reader.readAsDataURL(file);
+  function renderCurrentProduct() {
+    const container = document.getElementById('current');
+    if (!container) return;
+
+    const productImage = document.querySelector('.product__media img')?.src ||
+                         document.querySelector('[data-product-featured-image]')?.src;
+    const productTitle = document.querySelector('.product__title')?.textContent ||
+                         document.querySelector('h1')?.textContent;
+    const productPrice = document.querySelector('.price')?.textContent;
+
+    currentProductImage = productImage;
+
+    if (productImage) {
+      container.innerHTML = `
+        <div style="text-align: center;">
+          <img src="${productImage}" style="width: 100%; max-width: 200px; border-radius: 8px; margin-bottom: 12px;">
+          <div style="font-size: 14px; font-weight: 600; color: #111; margin-bottom: 4px;">${productTitle || 'Current Product'}</div>
+          <div style="font-size: 13px; color: #666;">${productPrice || ''}</div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = '<p style="color: #999;">No product found</p>';
     }
-  });
+  }
 
-  async function generateTryOn() {
-    if (!selectedModel || !currentProductImage) return;
-
-    browsePanel.style.display = 'none';
-    loadingState.style.display = 'block';
-    errorState.style.display = 'none';
-
-    console.log('🎨 Generating virtual try-on...', {
-      model: selectedModel.name,
-      product: currentProductImage.substring(0, 50) + '...'
-    });
-
-    try {
-      const response = await fetch(`${proxyBase}/api/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          modelImageUrl: selectedModel.image,
-          productImageUrl: currentProductImage,
-          productId: currentProductId,
-          productType: currentProductType
-        })
+  function setupTabs() {
+    document.querySelectorAll('.tryon-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        const target = this.dataset.tab;
+        document.querySelectorAll('.tryon-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.tryon-tab-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(target).classList.add('active');
       });
+    });
+  }
 
-      const result = await response.json();
+  function setupGenerate() {
+    const btn = document.getElementById('generate');
+    if (!btn) return;
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Generation failed');
+    btn.addEventListener('click', async function() {
+      if (!selectedModel || !currentProductImage) {
+        alert('Please select a model first');
+        return;
       }
 
-      console.log('✅ Generation successful!', result);
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '<p>Generating preview...</p>';
 
-      loadingState.style.display = 'none';
-      resultPanel.style.display = 'block';
-      
-      document.getElementById('originalImage').src = selectedModel.image;
-      document.getElementById('generatedImage').src = result.imageUrl;
+      try {
+        const response = await fetch(`${proxyBase}/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            modelImageUrl: selectedModel.img,
+            productImageUrl: currentProductImage
+          })
+        });
 
-    } catch (error) {
-      console.error('❌ Generation error:', error);
-      loadingState.style.display = 'none';
-      errorState.style.display = 'block';
-      document.getElementById('errorMessage').textContent = error.message || 'Something went wrong. Please try again.';
-    }
+        const result = await response.json();
+
+        if (result.success && result.imageUrl) {
+          resultDiv.innerHTML = `<img src="${result.imageUrl}" alt="Result">`;
+        } else {
+          throw new Error(result.error || 'Generation failed');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        resultDiv.innerHTML = `<p style="color: #dc2626;">Error: ${error.message}</p>`;
+      }
+    });
   }
 
-  backBtn.addEventListener('click', function() {
-    resultPanel.style.display = 'none';
-    browsePanel.style.display = 'block';
-  });
-
-  retryBtn.addEventListener('click', function() {
-    errorState.style.display = 'none';
-    browsePanel.style.display = 'block';
-  });
-
-  document.getElementById('downloadBtn')?.addEventListener('click', function() {
-    const img = document.getElementById('generatedImage');
-    const link = document.createElement('a');
-    link.href = img.src;
-    link.download = 'virtual-tryon-result.png';
-    link.click();
-  });
-
-  document.getElementById('addToCartBtn')?.addEventListener('click', function() {
-    const form = document.querySelector('form[action*="/cart/add"]');
-    if (form) {
-      form.submit();
-      modal.classList.remove('active');
-    }
-  });
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();
 </script>
