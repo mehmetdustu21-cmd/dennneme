@@ -1,263 +1,582 @@
-{% comment %}
-  Virtual Try-On Widget - With Real Models
-{% endcomment %}
-
-<style>
-  .vto-container {
-    min-height: 100vh;
-    background: #f9fafb;
-    padding: 24px;
-  }
-  /* ... (Tüm diğer CSS kurallarınız) ... */
-  @media (max-width: 640px) {
-    .vto-model-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-</style>
-{% comment %}
-    Hata veren JS ve CSS animasyonlarını buraya taşıyoruz
-    ve RAW etiketleri ile izole ediyoruz.
-{% endcomment %}
-{% raw %}
-<script>
-(function() {
-  // Get shop domain
-  const shopDomain = window.location.hostname;
-  
-  // Construct app proxy URL
-  // App Proxy URL: https://[shopDomain]/apps/virtual-tryon
-  const proxyBase = `https://${shopDomain}/apps/virtual-tryon`;
-  
-  // Real models from app - GÖRSEL SORUNUNU ÇÖZEN DOĞRU URL YAPISI BURADADIR.
-  const models = [
-    { id: 'male-1', name: 'Michael', image: `${proxyBase}/models/male-1.png`, gender: 'male' },
-    { id: 'male-2', name: 'James', image: `${proxyBase}/models/male-2.png`, gender: 'male' },
-    { id: 'male-3', name: 'David', image: `${proxyBase}/models/male-3.png`, gender: 'male' },
-    { id: 'male-4', name: 'Ryan', image: `${proxyBase}/models/male-4.png`, gender: 'male' },
-    { id: 'male-5', name: 'Alex', image: `${proxyBase}/models/male-5.png`, gender: 'male' },
-    { id: 'female-1', name: 'Emma', image: `${proxyBase}/models/female-1.png`, gender: 'female' },
-    { id: 'female-2', name: 'Sophia', image: `${proxyBase}/models/female-2.png`, gender: 'female' },
-    { id: 'female-3', name: 'Olivia', image: `${proxyBase}/models/female-3.png`, gender: 'female' },
-    { id: 'female-4', name: 'Isabella', image: `${proxyBase}/models/female-4.png`, gender: 'female' },
-    { id: 'female-5', name: 'Ava', image: `${proxyBase}/models/female-5.png`, gender: 'female' }
-  ];
-
-  let selectedModel = null;
-  let uploadedPhoto = null;
-  let sliderPosition = 50;
-
-  // Render models grid
-  const modelsGrid = document.getElementById('vto-models');
-
-  // Upload card
-  const uploadCard = document.createElement('div');
-  uploadCard.className = 'vto-upload-card';
-  uploadCard.id = 'vto-upload-card';
-  uploadCard.innerHTML = `
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-    </svg>
-    <span>Upload<br>Your Photo</span>
-  `;
-  uploadCard.onclick = () => document.getElementById('vto-upload-hidden').click();
-  modelsGrid.appendChild(uploadCard);
-
-  // Render models
-  models.forEach(model => {
-    const div = document.createElement('div');
-    div.className = 'vto-item';
-    div.innerHTML = `
-      <img src="${model.image}" alt="${model.name}">
-      <div class="vto-item-badge vto-badge-${model.gender}">${model.gender === 'male' ? 'M' : 'F'}</div>
-      <div class="vto-item-label">${model.name}</div>
-    `;
-    div.onclick = () => selectModel(model, div);
-    modelsGrid.appendChild(div);
-  });
-
-  function selectModel(model, element) {
-    document.querySelectorAll('.vto-model-grid .vto-item').forEach(el => el.classList.remove('selected'));
-    element.classList.add('selected');
-    selectedModel = model;
-    uploadedPhoto = null;
-    
-    // Reset upload card
-    const card = document.getElementById('vto-upload-card');
-    card.className = 'vto-upload-card';
-    card.innerHTML = `
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-      </svg>
-      <span>Upload<br>Your Photo</span>
-    `;
-    
-    updateGenerateButton();
-  }
-
-  document.getElementById('vto-upload-hidden').onchange = function(e) {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        uploadedPhoto = event.target.result;
-        const card = document.getElementById('vto-upload-card');
-        card.className = 'vto-upload-card has-image selected';
-        card.innerHTML = `<img src="${uploadedPhoto}" alt="Your photo">`;
-        
-        document.querySelectorAll('.vto-model-grid .vto-item').forEach(el => el.classList.remove('selected'));
-        selectedModel = null;
-        updateGenerateButton();
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  function updateGenerateButton() {
-    const btn = document.getElementById('vto-generate');
-    btn.disabled = !(selectedModel || uploadedPhoto);
-  }
-
-  document.getElementById('vto-generate').onclick = async function() {
-    const preview = document.getElementById('vto-preview');
-    const modelImage = uploadedPhoto || selectedModel?.image;
-    // Shopify'ın Liquid değişkenini kullanarak mevcut ürünün görselini al
-    const outfitImage = '{{ product.featured_image | img_url: "large" }}';
-
-    if (!modelImage) return;
-
-    // Show loading
-    this.innerHTML = `
-      <svg class="animate-spin" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"></circle>
-        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"></path>
-      </svg>
-      Generating...
-    `;
-    this.disabled = true;
-
-    // Simulate API call (replace with real API later)
-    // BU KISIMDA ARTIK GERÇEK API ÇAĞRISI YAPILMALIDIR.
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Show before/after slider
-    preview.innerHTML = `
-      <div class="vto-slider-container">
-        <div class="vto-before">
-          <img src="${modelImage}" alt="Before">
-          <div class="vto-badge vto-badge-before">Before</div>
-        </div>
-        <div class="vto-after" style="clip-path: inset(0 ${100 - sliderPosition}% 0 0);">
-          <img src="${outfitImage}" alt="After">
-          <div class="vto-badge vto-badge-after">With Product</div>
-        </div>
-        <div class="vto-slider-divider" style="left: ${sliderPosition}%;">
-          <div class="vto-slider-handle">
-            <svg width="12" height="12" fill="none" stroke="#9ca3af" stroke-width="2">
-              <path d="M2 6h8M6 2l-4 4 4 4m0-8l4 4-4 4"/>
-            </svg>
-          </div>
-        </div>
-        <input type="range" min="0" max="100" value="${sliderPosition}"
-          style="position: absolute; inset: 0; opacity: 0; cursor: ew-resize; width: 100%; height: 100%;"
-          oninput="document.querySelector('.vto-after').style.clipPath = 'inset(0 ' + (100 - this.value) + '% 0 0)'; document.querySelector('.vto-slider-divider').style.left = this.value + '%';">
-      </div>
-    `;
-
-    // Reset button
-    this.innerHTML = `
-      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-      </svg>
-      Regenerate
-    `;
-    this.disabled = false;
-  };
-})();
-</script>
-
-<style>
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  .animate-spin {
-    animation: spin 1s linear infinite;
-  }
-</style>
-{% endraw %}
-
-
-<div class="vto-container">
-  <div class="vto-wrapper">
-    
-        <div class="vto-header">
-      <h1 class="vto-title">TRY IT ON</h1>
-      <p class="vto-subtitle">
-        Build your perfect outfit and see it come to life. Try styles on our models
-        or on yourself, mix and match looks, and add your favorites to the cart.
-      </p>
-      <p class="vto-notice">
-        Note: The preview is AI-generated and may not be 100% accurate. No customer data is stored.
-      </p>
-    </div>
-
-    <input type="file" id="vto-upload-hidden" accept="image/*" style="display: none;">
-
-    <div class="vto-grid">
-
-            <div class="vto-panel">
-        <div class="vto-panel-header">
-          <svg class="vto-panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-          </svg>
-          <h2 class="vto-panel-title">Browse</h2>
-        </div>
-
-                <div>
-          <h3 class="vto-section-title">Select Model</h3>
-          <div class="vto-model-grid" id="vto-models"></div>
-        </div>
-      </div>
-
-            <div class="vto-panel">
-        <div class="vto-panel-header">
-          <svg class="vto-panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-          </svg>
-          <h2 class="vto-panel-title">Result</h2>
-        </div>
-
-        <div class="vto-preview" id="vto-preview">
-          <div class="vto-preview-placeholder">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-            </svg>
-            <p style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">Ready to Generate</p>
-            <p style="font-size: 14px;">Select a model and click generate below</p>
-          </div>
-        </div>
-
-        <button class="vto-generate-btn" id="vto-generate" disabled>
-          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
-          </svg>
-          Generate Preview
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
 {% schema %}
 {
-  "name": "Virtual Try-On",
-  "target": "section",
-  "settings": [],
-  "presets": [
-    {
-      "name": "Virtual Try-On"
-    }
-  ]
+  "name": "Virtual Try-On",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "TRY IT ON"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Button Color",
+      "default": "#000000"
+    }
+  ]
 }
 {% endschema %}
+
+<div class="virtual-tryon-container">
+  <button class="virtual-tryon-button" id="virtualTryonBtn">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
+      <circle cx="12" cy="12" r="3" fill="currentColor"/>
+    </svg>
+    {{ block.settings.button_text }}
+  </button>
+</div>
+
+<div id="virtualTryonModal" class="vto-modal">
+  <div class="vto-modal-content">
+    <div class="vto-modal-header">
+      <h2>Virtual Try-On</h2>
+      <button class="vto-close" id="closeModal">&times;</button>
+    </div>
+    
+    <div class="vto-modal-body">
+      <!-- Browse Panel -->
+      <div class="vto-panel" id="browsePanel">
+        <div class="vto-gender-tabs">
+          <button class="vto-tab active" data-gender="all">All</button>
+          <button class="vto-tab" data-gender="male">Male</button>
+          <button class="vto-tab" data-gender="female">Female</button>
+        </div>
+        
+        <div class="vto-models-grid" id="modelsGrid"></div>
+        
+        <div class="vto-upload-section">
+          <button class="vto-upload-btn" id="uploadBtn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M12 4v16m8-8H4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Upload Your Photo
+          </button>
+          <input type="file" id="photoUpload" accept="image/*" style="display: none;">
+        </div>
+      </div>
+      
+      <!-- Result Panel -->
+      <div class="vto-panel" id="resultPanel" style="display: none;">
+        <div class="vto-result-header">
+          <button class="vto-back-btn" id="backBtn">← Back</button>
+          <div class="vto-result-actions">
+            <button class="vto-action-btn" id="downloadBtn">Download</button>
+            <button class="vto-action-btn vto-action-primary" id="addToCartBtn">Add to Cart</button>
+          </div>
+        </div>
+        
+        <div class="vto-comparison">
+          <div class="vto-image-container">
+            <img id="originalImage" class="vto-result-image">
+            <div class="vto-image-label">Original Model</div>
+          </div>
+          <div class="vto-image-container">
+            <img id="generatedImage" class="vto-result-image">
+            <div class="vto-image-label">With Product</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Loading State -->
+      <div class="vto-loading" id="loadingState" style="display: none;">
+        <div class="vto-spinner"></div>
+        <p id="loadingText">Creating your virtual try-on...</p>
+        <p class="vto-loading-subtext">This may take 10-20 seconds</p>
+      </div>
+
+      <!-- Error State -->
+      <div class="vto-error" id="errorState" style="display: none;">
+        <div class="vto-error-icon">⚠️</div>
+        <h3>Generation Failed</h3>
+        <p id="errorMessage"></p>
+        <button class="vto-action-btn" id="retryBtn">Try Again</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.virtual-tryon-container {
+  margin: 20px 0;
+}
+
+.virtual-tryon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: {{ block.settings.button_color }};
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.virtual-tryon-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.vto-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.vto-modal.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vto-modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.vto-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.vto-modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.vto-close {
+  background: none;
+  border: none;
+  font-size: 32px;
+  cursor: pointer;
+  color: #6b7280;
+  line-height: 1;
+}
+
+.vto-modal-body {
+  padding: 24px;
+  max-height: calc(90vh - 80px);
+  overflow-y: auto;
+}
+
+.vto-gender-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.vto-tab {
+  padding: 8px 24px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vto-tab.active {
+  background: #000;
+  color: white;
+}
+
+.vto-models-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.vto-model-card {
+  cursor: pointer;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid transparent;
+}
+
+.vto-model-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+.vto-model-card.selected {
+  border-color: #000;
+}
+
+.vto-model-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.vto-model-name {
+  padding: 12px;
+  text-align: center;
+  font-weight: 600;
+  background: #f9fafb;
+}
+
+.vto-upload-section {
+  text-align: center;
+  padding: 24px;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.vto-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: white;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vto-upload-btn:hover {
+  border-color: #000;
+  background: #f9fafb;
+}
+
+.vto-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.vto-back-btn {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.vto-result-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.vto-action-btn {
+  padding: 10px 20px;
+  border: 2px solid #000;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  background: white;
+  transition: all 0.2s;
+}
+
+.vto-action-primary {
+  background: #000;
+  color: white;
+}
+
+.vto-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.vto-image-container {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f9fafb;
+}
+
+.vto-result-image {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.vto-image-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  color: white;
+  font-weight: 600;
+  text-align: center;
+}
+
+.vto-loading {
+  text-align: center;
+  padding: 60px 24px;
+}
+
+.vto-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #f3f4f6;
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+.vto-loading-subtext {
+  color: #6b7280;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.vto-error {
+  text-align: center;
+  padding: 60px 24px;
+}
+
+.vto-error-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.vto-error h3 {
+  margin: 0 0 12px 0;
+  font-size: 24px;
+}
+
+.vto-error p {
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .vto-models-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+  
+  .vto-comparison {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<script>
+(function() {
+  const shopDomain = window.location.hostname;
+  const proxyBase = `https://${shopDomain}/apps/virtual-tryon`;
+  
+  const models = [
+    { id: 'male-1', name: 'Michael', image: `${proxyBase}/models/male-1.png`, gender: 'male' },
+    { id: 'male-2', name: 'James', image: `${proxyBase}/models/male-2.png`, gender: 'male' },
+    { id: 'male-3', name: 'David', image: `${proxyBase}/models/male-3.png`, gender: 'male' },
+    { id: 'male-4', name: 'Ryan', image: `${proxyBase}/models/male-4.png`, gender: 'male' },
+    { id: 'male-5', name: 'Alex', image: `${proxyBase}/models/male-5.png`, gender: 'male' },
+    { id: 'female-1', name: 'Emma', image: `${proxyBase}/models/female-1.png`, gender: 'female' },
+    { id: 'female-2', name: 'Sophia', image: `${proxyBase}/models/female-2.png`, gender: 'female' },
+    { id: 'female-3', name: 'Olivia', image: `${proxyBase}/models/female-3.png`, gender: 'female' },
+    { id: 'female-4', name: 'Isabella', image: `${proxyBase}/models/female-4.png`, gender: 'female' },
+    { id: 'female-5', name: 'Ava', image: `${proxyBase}/models/female-5.png`, gender: 'female' }
+  ];
+
+  let selectedModel = null;
+  let currentGender = 'all';
+  let currentProductImage = null;
+  let currentProductId = null;
+  let currentProductType = null;
+
+  const modal = document.getElementById('virtualTryonModal');
+  const openBtn = document.getElementById('virtualTryonBtn');
+  const closeBtn = document.getElementById('closeModal');
+  const modelsGrid = document.getElementById('modelsGrid');
+  const browsePanel = document.getElementById('browsePanel');
+  const resultPanel = document.getElementById('resultPanel');
+  const loadingState = document.getElementById('loadingState');
+  const errorState = document.getElementById('errorState');
+  const backBtn = document.getElementById('backBtn');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const photoUpload = document.getElementById('photoUpload');
+  const retryBtn = document.getElementById('retryBtn');
+
+  function getCurrentProductInfo() {
+    const productImage = document.querySelector('.product__media img')?.src || 
+                         document.querySelector('[data-product-featured-image]')?.src ||
+                         document.querySelector('.product-single__photo img')?.src;
+    const productId = document.querySelector('[data-product-id]')?.dataset?.productId;
+    const productType = document.querySelector('[data-product-type]')?.dataset?.productType;
+    
+    return { productImage, productId, productType };
+  }
+
+  openBtn.addEventListener('click', function() {
+    const productInfo = getCurrentProductInfo();
+    currentProductImage = productInfo.productImage;
+    currentProductId = productInfo.productId;
+    currentProductType = productInfo.productType;
+    
+    if (!currentProductImage) {
+      alert('Product image not found. Please make sure you are on a product page.');
+      return;
+    }
+    
+    modal.classList.add('active');
+    renderModels();
+  });
+
+  closeBtn.addEventListener('click', () => modal.classList.remove('active'));
+  
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.remove('active');
+  });
+
+  document.querySelectorAll('.vto-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.vto-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      currentGender = this.dataset.gender;
+      renderModels();
+    });
+  });
+
+  function renderModels() {
+    const filteredModels = currentGender === 'all' 
+      ? models 
+      : models.filter(m => m.gender === currentGender);
+    
+    modelsGrid.innerHTML = filteredModels.map(model => `
+      <div class="vto-model-card" data-model-id="${model.id}">
+        <img src="${model.image}" alt="${model.name}" class="vto-model-image" 
+             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27150%27 height=%27200%27%3E%3Crect fill=%27%23f3f4f6%27 width=%27150%27 height=%27200%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 text-anchor=%27middle%27 dy=%27.3em%27 fill=%27%239ca3af%27%3E${model.name}%3C/text%3E%3C/svg%3E'">
+        <div class="vto-model-name">${model.name}</div>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.vto-model-card').forEach(card => {
+      card.addEventListener('click', function() {
+        document.querySelectorAll('.vto-model-card').forEach(c => c.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedModel = models.find(m => m.id === this.dataset.modelId);
+        generateTryOn();
+      });
+    });
+  }
+
+  uploadBtn.addEventListener('click', () => photoUpload.click());
+  
+  photoUpload.addEventListener('change', function(e) {
+    if (e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        selectedModel = {
+          id: 'custom',
+          name: 'Your Photo',
+          image: event.target.result,
+          gender: 'custom'
+        };
+        generateTryOn();
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  async function generateTryOn() {
+    if (!selectedModel || !currentProductImage) return;
+
+    browsePanel.style.display = 'none';
+    loadingState.style.display = 'block';
+    errorState.style.display = 'none';
+
+    console.log('🎨 Generating virtual try-on...', {
+      model: selectedModel.name,
+      product: currentProductImage.substring(0, 50) + '...'
+    });
+
+    try {
+      const response = await fetch(`${proxyBase}/api/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          modelImageUrl: selectedModel.image,
+          productImageUrl: currentProductImage,
+          productId: currentProductId,
+          productType: currentProductType
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Generation failed');
+      }
+
+      console.log('✅ Generation successful!', result);
+
+      loadingState.style.display = 'none';
+      resultPanel.style.display = 'block';
+      
+      document.getElementById('originalImage').src = selectedModel.image;
+      document.getElementById('generatedImage').src = result.imageUrl;
+
+    } catch (error) {
+      console.error('❌ Generation error:', error);
+      loadingState.style.display = 'none';
+      errorState.style.display = 'block';
+      document.getElementById('errorMessage').textContent = error.message || 'Something went wrong. Please try again.';
+    }
+  }
+
+  backBtn.addEventListener('click', function() {
+    resultPanel.style.display = 'none';
+    browsePanel.style.display = 'block';
+  });
+
+  retryBtn.addEventListener('click', function() {
+    errorState.style.display = 'none';
+    browsePanel.style.display = 'block';
+  });
+
+  document.getElementById('downloadBtn')?.addEventListener('click', function() {
+    const img = document.getElementById('generatedImage');
+    const link = document.createElement('a');
+    link.href = img.src;
+    link.download = 'virtual-tryon-result.png';
+    link.click();
+  });
+
+  document.getElementById('addToCartBtn')?.addEventListener('click', function() {
+    const form = document.querySelector('form[action*="/cart/add"]');
+    if (form) {
+      form.submit();
+      modal.classList.remove('active');
+    }
+  });
+})();
+</script>

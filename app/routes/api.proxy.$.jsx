@@ -1,70 +1,139 @@
-import { readFile } from "fs/promises";
-import { join } from "path";
+import { json } from "@remix-run/node";
+import { authenticate } from "../shopify.server";
+import fs from "fs";
+import path from "path";
 
-/**
- * App Proxy handler
- * Serves model images and API endpoints through Shopify store URL
- * https://shop.myshopify.com/apps/virtual-tryon/models/male-1.png
- */
-export const loader = async ({ request, params }) => {
+// App Proxy route handler
+export async function loader({ request, params }) {
   const url = new URL(request.url);
-  const path = params["*"]; // Everything after /api/proxy/
+  const pathname = url.pathname;
   
-  console.log("📡 App Proxy Request:", path);
+  console.log("🔵 App Proxy Request:", {
+    pathname,
+    params,
+    url: url.toString(),
+    headers: Object.fromEntries(request.headers)
+  });
 
-  // Serve model images
-  if (path.startsWith("models/")) {
-    const filename = path.replace("models/", "");
-    
-    try {
-      // Read image from public/models/
-      const imagePath = join(process.cwd(), "public", "models", filename);
-      const imageBuffer = await readFile(imagePath);
+  // Extract the file path from the URL
+  // URL format: /api/proxy/models/male-1.png
+  const filePath = pathname.replace('/api/proxy/', '');
+  
+  console.log("📁 Requested file:", filePath);
+
+  try {
+    // Handle model images
+    if (filePath.startsWith('models/')) {
+      const fileName = filePath.replace('models/', '');
+      const imagePath = path.join(process.cwd(), 'public', 'models', fileName);
       
-      // Determine content type
-      const ext = filename.split(".").pop().toLowerCase();
-      const contentType = {
-        png: "image/png",
-        jpg: "image/jpeg",
-        jpeg: "image/jpeg",
-        webp: "image/webp",
-      }[ext] || "image/png";
-      
-      return new Response(imageBuffer, {
-        status: 200,
-        headers: {
-          "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000, immutable",
-        },
-      });
-    } catch (error) {
-      console.error("❌ Image not found:", filename, error);
-      return new Response("Image not found", { status: 404 });
+      console.log("🖼️ Looking for image at:", imagePath);
+
+      // Check if file exists
+      if (fs.existsSync(imagePath)) {
+        const imageBuffer = fs.readFileSync(imagePath);
+        const ext = path.extname(fileName).toLowerCase();
+        
+        const contentTypes = {
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.gif': 'image/gif',
+          '.webp': 'image/webp'
+        };
+
+        const contentType = contentTypes[ext] || 'application/octet-stream';
+        
+        console.log("✅ Image found, serving with type:", contentType);
+
+        return new Response(imageBuffer, {
+          status: 200,
+          headers: {
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=31536000, immutable',
+            'Access-Control-Allow-Origin': '*'
+          }
+        });
+      } else {
+        console.error("❌ Image not found:", imagePath);
+        
+        // Return a placeholder SVG
+        const placeholder = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="400" height="600">
+            <rect fill="#f3f4f6" width="400" height="600"/>
+            <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#9ca3af" font-size="24">
+              ${fileName}
+            </text>
+            <text x="50%" y="60%" text-anchor="middle" dy=".3em" fill="#d1d5db" font-size="16">
+              Image not found
+            </text>
+          </svg>
+        `;
+        
+        return new Response(placeholder, {
+          status: 200,
+          headers: {
+            'Content-Type': 'image/svg+xml',
+            'Cache-Control': 'no-cache'
+          }
+        });
+      }
     }
-  }
 
-  // API endpoints
-  if (path === "api/models") {
-    // Return available models
-    const models = [
-      { id: 'male-1', name: 'Michael', gender: 'male' },
-      { id: 'male-2', name: 'James', gender: 'male' },
-      { id: 'male-3', name: 'David', gender: 'male' },
-      { id: 'male-4', name: 'Ryan', gender: 'male' },
-      { id: 'male-5', name: 'Alex', gender: 'male' },
-      { id: 'female-1', name: 'Emma', gender: 'female' },
-      { id: 'female-2', name: 'Sophia', gender: 'female' },
-      { id: 'female-3', name: 'Olivia', gender: 'female' },
-      { id: 'female-4', name: 'Isabella', gender: 'female' },
-      { id: 'female-5', name: 'Ava', gender: 'female' }
-    ];
+    // Handle API endpoints (for future use)
+    if (filePath.startsWith('api/')) {
+      return json({
+        success: true,
+        message: "Virtual Try-On API",
+        endpoint: filePath
+      });
+    }
+
+    // Default response
+    console.log("⚠️ Unknown proxy path:", filePath);
+    return json({
+      error: "Not Found",
+      path: filePath,
+      message: "The requested resource was not found"
+    }, { status: 404 });
+
+  } catch (error) {
+    console.error("❌ Proxy error:", error);
+    return json({
+      error: "Internal Server Error",
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
+  }
+}
+
+// Handle POST requests if needed
+export async function action({ request }) {
+  const url = new URL(request.url);
+  const pathname = url.pathname;
+  
+  console.log("🔵 App Proxy POST Request:", pathname);
+
+  try {
+    const body = await request.json();
     
-    return new Response(JSON.stringify(models), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+    // Handle different API endpoints
+    if (pathname.includes('/api/generate')) {
+      // Future: Handle virtual try-on generation
+      return json({
+        success: true,
+        message: "Generation endpoint (not implemented yet)"
+      });
+    }
 
-  // Default 404
-  return new Response("Not found", { status: 404 });
-};
+    return json({
+      error: "Endpoint not found"
+    }, { status: 404 });
+
+  } catch (error) {
+    console.error("❌ Proxy action error:", error);
+    return json({
+      error: error.message
+    }, { status: 500 });
+  }
+}
