@@ -1,0 +1,365 @@
+{% comment %}
+  Virtual Try-On Section Block
+  Ana sayfa için section olarak kullanılabilir
+{% endcomment %}
+
+<div class="virtual-tryon-section" style="
+  max-width: 1400px; 
+  margin: 40px auto; 
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: {% if section.settings.background_type == 'transparent' %}transparent{% elsif section.settings.background_type == 'white' %}#fff{% elsif section.settings.background_type == 'theme_color' %}var(--color-background, #fff){% else %}{{ section.settings.custom_background_color }}{% endif %};
+  {% if section.settings.show_border %}border: 1px solid {{ section.settings.border_color }};{% endif %}
+  border-radius: {{ section.settings.border_radius }}px;
+  padding: 20px;
+">
+  <div class="vto-container" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 32px;">
+    <!-- Sol Panel: Garment -->
+    <div class="vto-panel" style="display: flex; flex-direction: column; min-height: 500px;">
+      <div class="vto-panel-header" style="font-size: 16px; font-weight: 500; color: #000; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e5e5e5;">
+        Garment
+      </div>
+      <input 
+        type="text" 
+        class="vto-search" 
+        id="vto-search-input"
+        placeholder="Search for products..."
+        style="width: 100%; padding: 10px 12px; border: 1px solid #e5e5e5; border-radius: 4px; font-size: 14px; margin-bottom: 16px;"
+      >
+      
+      <div class="vto-product-grid" id="vto-product-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; overflow-y: auto; max-height: 600px;">
+        <div class="vto-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #999; font-size: 14px;">
+          Loading products...
+        </div>
+      </div>
+    </div>
+
+    <!-- Orta Panel: Result -->
+    <div class="vto-panel" style="display: flex; flex-direction: column; min-height: 500px;">
+      <div class="vto-panel-header" style="font-size: 16px; font-weight: 500; color: #000; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e5e5e5;">
+        Result
+      </div>
+      
+      <button class="vto-generate-btn" id="vto-generate-btn" disabled style="width: 100%; padding: 14px; background: #000; color: #fff; border: none; border-radius: 4px; font-size: 15px; font-weight: 500; cursor: pointer; margin-bottom: 20px;">
+        Generate Preview
+      </button>
+      
+      <div class="vto-result-area" id="vto-result-area" style="
+        background: {% if section.settings.background_type == 'transparent' %}transparent{% elsif section.settings.background_type == 'white' %}#f9f9f9{% elsif section.settings.background_type == 'theme_color' %}var(--color-background-light, #f9f9f9){% else %}{{ section.settings.custom_background_color | color_modify: 'alpha', 0.1 }}{% endif %};
+        border-radius: {{ section.settings.border_radius }}px;
+        padding: 20px;
+        min-height: 400px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+      ">
+        <div class="vto-placeholder" style="color: #999; font-size: 14px;">Select a model to generate preview</div>
+      </div>
+      
+      <div class="vto-tabs" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid #e5e5e5;">
+        <button class="vto-tab active" data-tab="model" style="padding: 10px 16px; background: none; border: none; border-bottom: 2px solid #000; cursor: pointer; font-size: 14px; font-weight: 500; color: #000;">Model</button>
+        <button class="vto-tab" data-tab="outfit" style="padding: 10px 16px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-size: 14px; font-weight: 500; color: #666;">Outfit</button>
+      </div>
+      
+      <div id="vto-model-tab" class="vto-model-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px;">
+        <div class="vto-model-item" data-model="male-1" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/male-1_tgqkkw.png" style="cursor: pointer; border: 2px solid transparent; border-radius: 4px; transition: all 0.2s; overflow: hidden;">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/male-1_tgqkkw.png" alt="Male Model 1" loading="lazy" style="width: 100%; height: 140px; object-fit: cover; display: block;">
+        </div>
+        <div class="vto-model-item" data-model="male-2" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/male-2_lq1tq4.png" style="cursor: pointer; border: 2px solid transparent; border-radius: 4px; transition: all 0.2s; overflow: hidden;">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/male-2_lq1tq4.png" alt="Male Model 2" loading="lazy" style="width: 100%; height: 140px; object-fit: cover; display: block;">
+        </div>
+        <div class="vto-model-item" data-model="male-3" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051823/male-3_g65gss.png" style="cursor: pointer; border: 2px solid transparent; border-radius: 4px; transition: all 0.2s; overflow: hidden;">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051823/male-3_g65gss.png" alt="Male Model 3" loading="lazy" style="width: 100%; height: 140px; object-fit: cover; display: block;">
+        </div>
+        <div class="vto-model-item" data-model="male-4" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051825/male-4_i2cycp.png" style="cursor: pointer; border: 2px solid transparent; border-radius: 4px; transition: all 0.2s; overflow: hidden;">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051825/male-4_i2cycp.png" alt="Male Model 4" loading="lazy" style="width: 100%; height: 140px; object-fit: cover; display: block;">
+        </div>
+        <div class="vto-model-item" data-model="male-5" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051821/male-5_e8xch5.png" style="cursor: pointer; border: 2px solid transparent; border-radius: 4px; transition: all 0.2s; overflow: hidden;">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051821/male-5_e8xch5.png" alt="Male Model 5" loading="lazy" style="width: 100%; height: 140px; object-fit: cover; display: block;">
+        </div>
+        <div class="vto-model-item" data-model="female-2" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/female-2_g1ptie.png" style="cursor: pointer; border: 2px solid transparent; border-radius: 4px; transition: all 0.2s; overflow: hidden;">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/female-2_g1ptie.png" alt="Female Model 2" loading="lazy" style="width: 100%; height: 140px; object-fit: cover; display: block;">
+        </div>
+        <div class="vto-model-item" data-model="female-3" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051823/female-3_odrhyn.png" style="cursor: pointer; border: 2px solid transparent; border-radius: 4px; transition: all 0.2s; overflow: hidden;">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051823/female-3_odrhyn.png" alt="Female Model 3" loading="lazy" style="width: 100%; height: 140px; object-fit: cover; display: block;">
+        </div>
+        <div class="vto-model-item" data-model="female-4" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051821/female-4_n1crei.png" style="cursor: pointer; border: 2px solid transparent; border-radius: 4px; transition: all 0.2s; overflow: hidden;">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051821/female-4_n1crei.png" alt="Female Model 4" loading="lazy" style="width: 100%; height: 140px; object-fit: cover; display: block;">
+        </div>
+        <div class="vto-model-item" data-model="female-5" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/female-5_prlopn.png" style="cursor: pointer; border: 2px solid transparent; border-radius: 4px; transition: all 0.2s; overflow: hidden;">
+          <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/female-5_prlopn.png" alt="Female Model 5" loading="lazy" style="width: 100%; height: 140px; object-fit: cover; display: block;">
+        </div>
+      </div>
+      
+      <div id="vto-outfit-tab" class="vto-model-grid" style="display: none; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px;">
+        <div class="vto-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 20px; color: #999; font-size: 14px;">
+          Outfit variations will appear here
+        </div>
+      </div>
+    </div>
+
+    <!-- Sağ Panel: Selected Model -->
+    <div class="vto-panel" style="display: flex; flex-direction: column; min-height: 500px;">
+      <div class="vto-panel-header" style="font-size: 16px; font-weight: 500; color: #000; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e5e5e5;">
+        Selected Model
+      </div>
+      <div class="vto-selected-model" id="vto-selected-model" style="background: #f9f9f9; border-radius: 4px; padding: 20px; text-align: center;">
+        <div class="vto-placeholder" style="color: #999; font-size: 14px;">No model selected</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      let selectedProduct = null;
+      let selectedModel = null;
+      let selectedModelImage = null;
+      let allProducts = [];
+
+      // Load products from Shopify
+      async function loadProducts() {
+        const productGrid = document.getElementById('vto-product-grid');
+        
+        try {
+          const response = await fetch('/collections/all/products.json?limit=20');
+          const data = await response.json();
+          
+          if (data.products && data.products.length > 0) {
+            allProducts = data.products;
+            renderProducts(data.products);
+          } else {
+            productGrid.innerHTML = '<div class="vto-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 40px;">No products found</div>';
+          }
+        } catch (error) {
+          console.error('Error loading products:', error);
+          productGrid.innerHTML = '<div class="vto-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: red;">Error loading products</div>';
+        }
+      }
+
+      function renderProducts(products) {
+        const productGrid = document.getElementById('vto-product-grid');
+        
+        if (products.length === 0) {
+          productGrid.innerHTML = '<div class="vto-placeholder" style="grid-column: 1 / -1; text-align: center; padding: 40px;">No products found</div>';
+          return;
+        }
+
+        const productsHTML = products.map(product => {
+          const image = product.images && product.images.length > 0 
+            ? product.images[0].src 
+            : 'https://via.placeholder.com/300x300?text=No+Image';
+          
+          const price = product.variants && product.variants.length > 0 
+            ? `$${parseFloat(product.variants[0].price / 100).toFixed(2)}`
+            : 'N/A';
+
+          return `
+            <div class="vto-product-item" 
+                 data-product-id="${product.id}" 
+                 data-product-image="${image}"
+                 style="cursor: pointer; border: 2px solid transparent; border-radius: 4px; transition: all 0.2s; overflow: hidden; background: #f9f9f9;">
+              <img src="${image}" alt="${product.title}" loading="lazy" style="width: 100%; height: 160px; object-fit: cover; display: block;">
+              <div class="vto-product-info" style="padding: 8px;">
+                <div class="vto-product-title" style="font-size: 13px; font-weight: 500; color: #000; margin: 0 0 4px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${product.title}</div>
+                <div class="vto-product-price" style="font-size: 12px; color: #666;">${price}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        productGrid.innerHTML = productsHTML;
+        attachProductListeners();
+      }
+
+      function attachProductListeners() {
+        document.querySelectorAll('.vto-product-item').forEach(item => {
+          item.addEventListener('click', function() {
+            document.querySelectorAll('.vto-product-item').forEach(p => p.classList.remove('selected'));
+            this.classList.add('selected');
+            this.style.borderColor = '#000';
+            this.style.background = '#fff';
+            selectedProduct = {
+              id: this.dataset.productId,
+              image: this.dataset.productImage
+            };
+            updateGenerateButton();
+          });
+        });
+      }
+
+      loadProducts();
+
+      document.querySelectorAll('.vto-model-item').forEach(item => {
+        item.addEventListener('click', function() {
+          document.querySelectorAll('.vto-model-item').forEach(m => m.classList.remove('selected'));
+          this.classList.add('selected');
+          this.style.borderColor = '#000';
+          
+          selectedModel = this.dataset.model;
+          selectedModelImage = this.dataset.modelUrl;
+          
+          document.getElementById('vto-selected-model').innerHTML = 
+            `<img src="${selectedModelImage}" alt="${selectedModel}" style="max-width: 100%; height: auto; border-radius: 4px;">`;
+          
+          updateGenerateButton();
+        });
+      });
+
+      document.querySelectorAll('.vto-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+          document.querySelectorAll('.vto-tab').forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          const tabName = this.dataset.tab;
+          document.getElementById('vto-model-tab').style.display = tabName === 'model' ? 'grid' : 'none';
+          document.getElementById('vto-outfit-tab').style.display = tabName === 'outfit' ? 'grid' : 'none';
+        });
+      });
+
+      function updateGenerateButton() {
+        const btn = document.getElementById('vto-generate-btn');
+        if (selectedProduct && selectedModel) {
+          btn.disabled = false;
+        } else {
+          btn.disabled = true;
+        }
+      }
+
+      document.getElementById('vto-generate-btn').addEventListener('click', async function() {
+        if (!selectedProduct || !selectedModel) return;
+        
+        const btn = this;
+        const resultArea = document.getElementById('vto-result-area');
+        
+        btn.disabled = true;
+        btn.textContent = 'Generating...';
+        resultArea.innerHTML = '<div class="vto-placeholder" style="color: #999; font-size: 14px;">Processing...</div>';
+        
+        try {
+          const response = await fetch('/apps/virtual-tryon/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              garment_image: selectedProduct.image,
+              model_image: selectedModelImage,
+              model_id: selectedModel
+            })
+          });
+          
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            const textResponse = await response.text();
+            console.error('Non-JSON response:', textResponse);
+            resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Server error: Invalid response format</div>`;
+            return;
+          }
+          
+          let data;
+          try {
+            data = await response.json();
+          } catch (jsonError) {
+            console.error('JSON parse error:', jsonError);
+            resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Server error: Failed to parse response</div>`;
+            return;
+          }
+          
+          if (data.success && data.result_url) {
+            resultArea.innerHTML = `<img src="${data.result_url}" alt="Result" style="max-width: 100%; border-radius: 4px;">`;
+          } else {
+            const errorMsg = data.error || 'Unknown error';
+            resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Generation failed: ${errorMsg}</div>`;
+          }
+        } catch (error) {
+          console.error('Network error:', error);
+          resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Network error: ${error.message}</div>`;
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Generate Preview';
+        }
+      });
+
+      document.getElementById('vto-search-input').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        
+        if (searchTerm === '') {
+          renderProducts(allProducts);
+        } else {
+          const filteredProducts = allProducts.filter(product => 
+            product.title.toLowerCase().includes(searchTerm)
+          );
+          renderProducts(filteredProducts);
+        }
+      });
+    })();
+  </script>
+</div>
+
+{% schema %}
+{
+  "name": "Virtual Try-On Section",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["*"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Background Settings"
+    },
+    {
+      "type": "select",
+      "id": "background_type",
+      "label": "Background Type",
+      "options": [
+        {
+          "value": "transparent",
+          "label": "Transparent"
+        },
+        {
+          "value": "white",
+          "label": "White"
+        },
+        {
+          "value": "theme_color",
+          "label": "Theme Color"
+        },
+        {
+          "value": "custom",
+          "label": "Custom Color"
+        }
+      ],
+      "default": "white"
+    },
+    {
+      "type": "color",
+      "id": "custom_background_color",
+      "label": "Custom Background Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_border",
+      "label": "Show Border",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border Color",
+      "default": "#e5e5e5"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Border Radius",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 4
+    }
+  ]
+}
+{% endschema %}
