@@ -10,8 +10,9 @@
       grid-template-columns: 1fr 1fr 1fr;
       gap: 32px;
       padding: 20px;
-      background: #fff;
-      border: 1px solid #e5e5e5;
+      background: {% if section.settings.background_type == 'transparent' %}transparent{% elsif section.settings.background_type == 'white' %}#fff{% elsif section.settings.background_type == 'theme_color' %}var(--color-background, #fff){% else %}{{ section.settings.custom_background_color }}{% endif %};
+      {% if section.settings.show_border %}border: 1px solid {{ section.settings.border_color }};{% endif %}
+      border-radius: {{ section.settings.border_radius }}px;
     }
     
     .vto-panel {
@@ -96,8 +97,8 @@
     }
     
     .vto-result-area {
-      background: #f9f9f9;
-      border-radius: 4px;
+      background: {% if section.settings.background_type == 'transparent' %}transparent{% elsif section.settings.background_type == 'white' %}#f9f9f9{% elsif section.settings.background_type == 'theme_color' %}var(--color-background-light, #f9f9f9){% else %}{{ section.settings.custom_background_color | color_modify: 'alpha', 0.1 }}{% endif %};
+      border-radius: {{ section.settings.border_radius }}px;
       padding: 20px;
       min-height: 400px;
       display: flex;
@@ -490,6 +491,63 @@
 {
   "name": "Virtual Try-On",
   "target": "section",
-  "settings": []
+  "settings": [
+    {
+      "type": "header",
+      "content": "Background Settings"
+    },
+    {
+      "type": "select",
+      "id": "background_type",
+      "label": "Background Type",
+      "options": [
+        {
+          "value": "transparent",
+          "label": "Transparent"
+        },
+        {
+          "value": "white",
+          "label": "White"
+        },
+        {
+          "value": "theme_color",
+          "label": "Theme Color"
+        },
+        {
+          "value": "custom",
+          "label": "Custom Color"
+        }
+      ],
+      "default": "white"
+    },
+    {
+      "type": "color",
+      "id": "custom_background_color",
+      "label": "Custom Background Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_border",
+      "label": "Show Border",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border Color",
+      "default": "#e5e5e5"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Border Radius",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 4
+    }
+  ]
 }
 {% endschema %}
