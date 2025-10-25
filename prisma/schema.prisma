@@ -17,7 +17,7 @@ model Session {
   scope         String?
   expires       DateTime?
   accessToken   String
-  userId        BigInt?
+  userId        String?
   firstName     String?
   lastName      String?
   email         String?
@@ -39,7 +39,7 @@ model Shop {
   
   // Subscription details
   subscriptionId    String?  // Shopify recurring charge ID
-  planPrice         Decimal? @db.Decimal(10, 2)
+  planPrice         Float?
   billingCycle      String?  // monthly, annual
   trialEndsAt       DateTime?
   
@@ -77,7 +77,7 @@ model Generation {
   
   // API details
   apiProvider     String   @default("fal") // fal, replicate, etc.
-  apiCost         Decimal  @db.Decimal(10, 4) // Cost per generation ($0.05)
+  apiCost         Float    // Cost per generation ($0.05)
   creditsUsed     Int      @default(1)
   
   // Error handling
@@ -101,9 +101,9 @@ model CreditPurchase {
   shop            Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   
   // Purchase details
-  amount          Decimal  @db.Decimal(10, 2) // Amount paid ($10, $50, etc.)
+  amount          Float    // Amount paid ($10, $50, etc.)
   credits         Int      // Credits purchased
-  pricePerCredit  Decimal  @db.Decimal(10, 4) // Effective price per credit
+  pricePerCredit  Float    // Effective price per credit
   
   // Shopify billing
   chargeId        String?  @unique // Shopify one-time charge ID
@@ -131,6 +131,30 @@ model CustomModel {
   // Metadata
   active          Boolean  @default(true)
   createdAt       DateTime @default(now())
+  
+  @@index([shop])
+}
+
+// Theme settings for virtual try-on widget
+model ThemeSettings {
+  id              String   @id @default(cuid())
+  shop            String   @unique
+  
+  // Color settings
+  primaryColor    String   @default("#000000")
+  secondaryColor  String   @default("#ffffff")
+  backgroundColor String   @default("#f9f9f9")
+  borderColor     String   @default("#e5e5e5")
+  
+  // Layout settings
+  borderRadius    Int      @default(4)
+  showBorder      Boolean  @default(true)
+  backgroundType  String   @default("white") // transparent, white, theme_color, custom
+  fontSize        Int      @default(14)
+  
+  // Metadata
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   
   @@index([shop])
 }

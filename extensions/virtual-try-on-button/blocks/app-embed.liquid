@@ -20,6 +20,55 @@
 {
   "name": "Virtual Try-On",
   "target": "head",
-  "settings": []
+  "settings": [
+    {
+      "type": "header",
+      "content": "App Configuration"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_widget",
+      "label": "Enable Virtual Try-On Widget",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "api_endpoint",
+      "label": "API Endpoint",
+      "default": "/apps/virtual-tryon/generate"
+    },
+    {
+      "type": "header",
+      "content": "Theme Settings"
+    },
+    {
+      "type": "color",
+      "id": "primary_color",
+      "label": "Primary Color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "secondary_color",
+      "label": "Secondary Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Color",
+      "default": "#f9f9f9"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Border Radius",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 4
+    }
+  ]
 }
 {% endschema %}

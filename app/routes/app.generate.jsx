@@ -16,10 +16,19 @@ export async function action({ request }) {
     });
 
     // fal.ai API'ye istek yap
+    const FAL_KEY = process.env.FAL_KEY;
+    if (!FAL_KEY) {
+      console.error("[Generate] FAL_KEY environment variable not set");
+      return Response.json({ 
+        success: false, 
+        error: "API configuration error" 
+      }, { status: 500 });
+    }
+
     const response = await fetch("https://queue.fal.run/fal-ai/image-apps-v2/virtual-try-on", {
       method: "POST",
       headers: {
-        "Authorization": "Key 89142345-f225-4dcf-b8c8-3d5bbba40e8c:dae48432917c52f5bf675d9b6c81ead6",
+        "Authorization": `Key ${FAL_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -80,7 +89,7 @@ export async function action({ request }) {
         try {
           const statusResponse = await fetch(`https://queue.fal.run/fal-ai/image-apps-v2/requests/${result.request_id}`, {
             headers: {
-              "Authorization": "Key 89142345-f225-4dcf-b8c8-3d5bbba40e8c:dae48432917c52f5bf675d9b6c81ead6",
+              "Authorization": `Key ${FAL_KEY}`,
             },
           });
           

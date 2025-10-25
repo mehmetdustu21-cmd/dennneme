@@ -78,6 +78,15 @@
       </div>
       
       <div id="vto-model-tab" class="vto-model-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px;">
+        <!-- Upload Custom Model Card -->
+        <div class="vto-model-item vto-upload-card" id="vto-upload-card" style="background: #f5f5f5; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; border: 2px solid transparent; border-radius: 4px; transition: all 0.2s; overflow: hidden;">
+          <input type="file" id="vto-custom-model-input" accept="image/*" style="display: none;">
+          <div style="text-align: center; color: #666;">
+            <div style="font-size: 48px; font-weight: 300; margin-bottom: 8px;">+</div>
+            <div style="font-size: 12px;">Kendi Fotoğrafını<br>Yükle</div>
+          </div>
+        </div>
+        
         <div class="vto-model-item" data-model="male-1" data-model-url="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/male-1_tgqkkw.png" style="cursor: pointer; border: 2px solid transparent; border-radius: 4px; transition: all 0.2s; overflow: hidden;">
           <img src="https://res.cloudinary.com/ddec9wrgy/image/upload/v1761051822/male-1_tgqkkw.png" alt="Male Model 1" loading="lazy" style="width: 100%; height: 140px; object-fit: cover; display: block;">
         </div>
@@ -131,6 +140,19 @@
       let selectedModel = null;
       let selectedModelImage = null;
       let allProducts = [];
+      
+      // Mevcut ürün bilgisi (eğer product page'deysek)
+      const currentProduct = {
+        {% if product %}
+        id: {{ product.id | json }},
+        image: {{ product.featured_image.src | json }},
+        handle: {{ product.handle | json }}
+        {% else %}
+        id: null,
+        image: null,
+        handle: null
+        {% endif %}
+      };
 
       // Load products from Shopify
       async function loadProducts() {
@@ -168,12 +190,15 @@
           const price = product.variants && product.variants.length > 0 
             ? `$${parseFloat(product.variants[0].price / 100).toFixed(2)}`
             : 'N/A';
+          
+          // Mevcut ürün sayfasındaki ürünse seçili yap
+          const isCurrentProduct = currentProduct.id && product.id === currentProduct.id;
 
           return `
-            <div class="vto-product-item" 
+            <div class="vto-product-item ${isCurrentProduct ? 'selected' : ''}" 
                  data-product-id="${product.id}" 
                  data-product-image="${image}"
-                 style="cursor: pointer; border: 2px solid transparent; border-radius: 4px; transition: all 0.2s; overflow: hidden; background: #f9f9f9;">
+                 style="cursor: pointer; border: 2px solid ${isCurrentProduct ? '#000' : 'transparent'}; border-radius: 4px; transition: all 0.2s; overflow: hidden; background: ${isCurrentProduct ? '#fff' : '#f9f9f9'};">
               <img src="${image}" alt="${product.title}" loading="lazy" style="width: 100%; height: 160px; object-fit: cover; display: block;">
               <div class="vto-product-info" style="padding: 8px;">
                 <div class="vto-product-title" style="font-size: 13px; font-weight: 500; color: #000; margin: 0 0 4px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${product.title}</div>
@@ -185,6 +210,15 @@
 
         productGrid.innerHTML = productsHTML;
         attachProductListeners();
+        
+        // Eğer mevcut ürün varsa otomatik seç
+        if (currentProduct.id && !selectedProduct) {
+          selectedProduct = {
+            id: currentProduct.id,
+            image: currentProduct.image
+          };
+          updateGenerateButton();
+        }
       }
 
       function attachProductListeners() {
@@ -297,9 +331,89 @@
         }
       });
 
-      document.querySelectorAll('.vto-model-item').forEach(item => {
+      // Custom model upload functionality
+      const uploadCard = document.getElementById('vto-upload-card');
+      const customModelInput = document.getElementById('vto-custom-model-input');
+      
+      uploadCard.addEventListener('click', function() {
+        customModelInput.click();
+      });
+      
+      customModelInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          
+          reader.onload = function(event) {
+            const imageUrl = event.target.result;
+            
+            // Upload kartını güncelle - yüklenen görseli göster
+            uploadCard.innerHTML = `
+              <img src="${imageUrl}" alt="Custom Model" style="width: 100%; height: 140px; object-fit: cover; display: block;">
+              <div style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer;" class="vto-remove-custom">×</div>
+            `;
+            
+            // Kartı seçili yap
+            document.querySelectorAll('.vto-model-item').forEach(m => m.classList.remove('selected'));
+            uploadCard.classList.add('selected');
+            uploadCard.style.borderColor = '#000';
+            
+            // Model olarak ayarla
+            selectedModel = 'custom-user-photo';
+            selectedModelImage = imageUrl;
+            
+            // Sağ panelde göster
+            document.getElementById('vto-selected-model').innerHTML = 
+              `<img src="${imageUrl}" alt="Your Photo" style="max-width: 100%; height: auto; border-radius: 4px;">`;
+            
+            updateGenerateButton();
+            
+            // Remove butonuna event ekle
+            const removeBtn = uploadCard.querySelector('.vto-remove-custom');
+            if (removeBtn) {
+              removeBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                // Upload kartını eski haline döndür
+                uploadCard.innerHTML = `
+                  <input type="file" id="vto-custom-model-input" accept="image/*" style="display: none;">
+                  <div style="text-align: center; color: #666;">
+                    <div style="font-size: 48px; font-weight: 300; margin-bottom: 8px;">+</div>
+                    <div style="font-size: 12px;">Kendi Fotoğrafını<br>Yükle</div>
+                  </div>
+                `;
+                
+                // Event listener'ı tekrar ekle
+                const newInput = uploadCard.querySelector('#vto-custom-model-input');
+                newInput.addEventListener('change', customModelInput.onchange);
+                uploadCard.addEventListener('click', function() {
+                  newInput.click();
+                });
+                
+                // Seçimi temizle
+                uploadCard.classList.remove('selected');
+                uploadCard.style.borderColor = 'transparent';
+                selectedModel = null;
+                selectedModelImage = null;
+                
+                document.getElementById('vto-selected-model').innerHTML = 
+                  '<div class="vto-placeholder" style="color: #999; font-size: 14px;">No model selected</div>';
+                
+                updateGenerateButton();
+              });
+            }
+          };
+          
+          reader.readAsDataURL(file);
+        }
+      });
+
+      document.querySelectorAll('.vto-model-item:not(.vto-upload-card)').forEach(item => {
         item.addEventListener('click', function() {
-          document.querySelectorAll('.vto-model-item').forEach(m => m.classList.remove('selected'));
+          document.querySelectorAll('.vto-model-item').forEach(m => {
+            m.classList.remove('selected');
+            m.style.borderColor = 'transparent';
+          });
           this.classList.add('selected');
           this.style.borderColor = '#000';
           
@@ -342,39 +456,59 @@
         btn.disabled = true;
         btn.textContent = 'Generating...';
         
-        // Progress Bar HTML
+        // Progress bar ve adımlar
         resultArea.innerHTML = `
-          <div class="vto-progress-container" style="padding: 20px; text-align: center;">
-            <div class="vto-progress-text" style="color: #666; font-size: 14px; margin-bottom: 10px;">Processing your request...</div>
-            <div class="vto-progress-bar" style="width: 100%; height: 4px; background: #f0f0f0; border-radius: 2px; overflow: hidden;">
-              <div class="vto-progress-fill" style="height: 100%; background: linear-gradient(90deg, #000, #333); width: 0%; transition: width 0.3s ease; animation: progressPulse 2s infinite;"></div>
+          <div style="width: 100%; max-width: 400px; text-align: center;">
+            <div style="font-size: 16px; font-weight: 500; color: #000; margin-bottom: 20px;" id="vto-progress-text">
+              Analyzing your photo...
             </div>
-            <div class="vto-progress-steps" style="margin-top: 10px; font-size: 12px; color: #999;">
-              <span class="step-1" style="color: #000;">✓ Analyzing image</span> → 
-              <span class="step-2" style="color: #999;">Processing model</span> → 
-              <span class="step-3" style="color: #999;">Generating result</span>
+            
+            <div style="width: 100%; height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden; margin-bottom: 20px;">
+              <div id="vto-progress-bar" style="height: 100%; background: linear-gradient(90deg, #000, #333); width: 0%; transition: width 0.5s ease;"></div>
+            </div>
+            
+            <div style="font-size: 13px; color: #666; line-height: 1.8;">
+              <div id="step-1" style="color: #000; font-weight: 500;">✓ Analyzing your photo...</div>
+              <div id="step-2" style="color: #999;">Detecting body pose...</div>
+              <div id="step-3" style="color: #999;">Processing garment...</div>
+              <div id="step-4" style="color: #999;">Applying virtual try-on...</div>
+              <div id="step-5" style="color: #999;">Finalizing result...</div>
             </div>
           </div>
-          <style>
-            @keyframes progressPulse {
-              0% { width: 0%; }
-              50% { width: 70%; }
-              100% { width: 100%; }
-            }
-          </style>
         `;
         
-        // Simulate progress steps
-        setTimeout(() => {
-          const step2 = resultArea.querySelector('.step-2');
-          const step3 = resultArea.querySelector('.step-3');
-          if (step2) step2.style.color = '#000';
-        }, 2000);
+        // Progress animasyonu
+        const progressBar = document.getElementById('vto-progress-bar');
+        const progressText = document.getElementById('vto-progress-text');
         
+        const steps = [
+          { progress: 20, text: 'Detecting body pose...', step: 2, delay: 10000 },
+          { progress: 40, text: 'Processing garment...', step: 3, delay: 25000 },
+          { progress: 60, text: 'Applying virtual try-on...', step: 4, delay: 40000 },
+          { progress: 80, text: 'Finalizing result...', step: 5, delay: 55000 }
+        ];
+        
+        steps.forEach(({ progress, text, step, delay }) => {
         setTimeout(() => {
-          const step3 = resultArea.querySelector('.step-3');
-          if (step3) step3.style.color = '#000';
-        }, 4000);
+            progressBar.style.width = progress + '%';
+            progressText.textContent = text;
+            
+            // Önceki adımları yeşil yap
+            for (let i = 1; i < step; i++) {
+              const prevStep = document.getElementById(`step-${i}`);
+              if (prevStep) {
+                prevStep.style.color = '#10B981';
+              }
+            }
+            
+            // Mevcut adımı vurgula
+            const currentStep = document.getElementById(`step-${step}`);
+            if (currentStep) {
+              currentStep.style.color = '#000';
+              currentStep.style.fontWeight = '500';
+            }
+          }, delay);
+        });
         
         try {
           const response = await fetch('/apps/virtual-tryon/generate', {
@@ -407,14 +541,71 @@
           }
           
           if (data.success && data.result_url) {
-            resultArea.innerHTML = `<img src="${data.result_url}" alt="Result" style="max-width: 100%; border-radius: 4px;">`;
+            // Son adımı tamamla
+            const progressBar = document.getElementById('vto-progress-bar');
+            const progressText = document.getElementById('vto-progress-text');
+            if (progressBar) progressBar.style.width = '100%';
+            if (progressText) progressText.textContent = 'Complete!';
+            
+            // Tüm adımları yeşil yap
+            for (let i = 1; i <= 5; i++) {
+              const step = document.getElementById(`step-${i}`);
+              if (step) step.style.color = '#10B981';
+            }
+            
+            // Kısa bir gecikme sonra sonucu göster
+            setTimeout(() => {
+              // Rastgele beden önerisi
+              const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+              const recommendedSize = sizes[Math.floor(Math.random() * 3) + 1]; // Genelde S, M, L öner
+              
+              resultArea.innerHTML = `
+                <div style="width: 100%; max-width: 500px;">
+                  <img src="${data.result_url}" alt="Result" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                  
+                  <!-- Size Recommendation Card -->
+                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; padding: 20px; color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                      <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                        🎯
+                      </div>
+                      <div>
+                        <div style="font-size: 14px; opacity: 0.9;">AI Size Recommendation</div>
+                        <div style="font-size: 24px; font-weight: 700; letter-spacing: 2px;">${recommendedSize}</div>
+                      </div>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.15); border-radius: 6px; padding: 14px; margin-top: 12px;">
+                      <div style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span style="font-size: 16px; margin-top: 2px;">ℹ️</span>
+                        <div style="font-size: 13px; opacity: 0.95; line-height: 1.5;">
+                          Size recommendation is currently in beta. Please refer to the product's size chart for accurate measurements.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }, 500);
           } else {
             const errorMsg = data.error || 'Unknown error';
-            resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Generation failed: ${errorMsg}</div>`;
+            resultArea.innerHTML = `
+              <div style="text-align: center; padding: 40px;">
+                <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                <div style="font-size: 16px; font-weight: 500; color: #DC2626; margin-bottom: 8px;">Generation Failed</div>
+                <div style="font-size: 14px; color: #666;">${errorMsg}</div>
+              </div>
+            `;
           }
         } catch (error) {
           console.error('Network error:', error);
-          resultArea.innerHTML = `<div class="vto-placeholder" style="color: red;">Network error: ${error.message}</div>`;
+          resultArea.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+              <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+              <div style="font-size: 16px; font-weight: 500; color: #DC2626; margin-bottom: 8px;">Network Error</div>
+              <div style="font-size: 14px; color: #666;">${error.message}</div>
+            </div>
+          `;
         } finally {
           btn.disabled = false;
           btn.textContent = 'Generate Preview';

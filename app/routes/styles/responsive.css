@@ -1,0 +1,155 @@
+/* Mobil uyumluluk için genel CSS kuralları */
+
+/* Mobil öncelikli dikey tasarım */
+@media (max-width: 768px) {
+  /* Sayfa genel düzenlemeleri */
+  .Polaris-Page {
+    padding: 1rem !important;
+  }
+  
+  /* Kartları dikey düzende optimize et */
+  .Polaris-Card {
+    margin-bottom: 1rem !important;
+    padding: 1.5rem !important;
+    border-radius: 12px !important;
+  }
+  
+  /* Başlıkları mobil için optimize et */
+  .Polaris-Text--headingLg {
+    font-size: 1.5rem !important;
+    line-height: 1.3 !important;
+    text-align: center !important;
+  }
+  
+  .Polaris-Text--headingMd {
+    font-size: 1.25rem !important;
+    line-height: 1.3 !important;
+    text-align: center !important;
+  }
+  
+  .Polaris-Text--headingSm {
+    font-size: 1.1rem !important;
+  }
+  
+  /* Tüm InlineStack'leri dikey yap */
+  .Polaris-InlineStack {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
+  }
+  
+  /* Butonları tam genişlik yap */
+  .Polaris-Button {
+    width: 100% !important;
+    margin-bottom: 0.75rem !important;
+    padding: 1rem !important;
+    font-size: 1rem !important;
+  }
+  
+  /* ColorPicker'ları tam genişlik yap */
+  .Polaris-ColorPicker {
+    width: 100% !important;
+  }
+  
+  /* Box bileşenlerini tam genişlik yap */
+  .Polaris-Box {
+    width: 100% !important;
+    min-width: auto !important;
+  }
+  
+  /* Modal içeriğini mobil uyumlu yap */
+  .Polaris-Modal__Body {
+    padding: 1rem !important;
+  }
+  
+  /* Range slider'ı tam genişlik yap */
+  .Polaris-RangeSlider {
+    width: 100% !important;
+  }
+  
+  /* Select bileşenlerini tam genişlik yap */
+  .Polaris-Select {
+    width: 100% !important;
+  }
+  
+  /* İkon kutularını merkezi hizala */
+  .Polaris-Card div[style*="width: '48px'"] {
+    margin: 0 auto !important;
+  }
+  
+  /* Progress bar'ı tam genişlik yap */
+  .Polaris-ProgressBar {
+    width: 100% !important;
+  }
+}
+
+/* Tablet ve orta boyut ekranlar */
+@media (min-width: 481px) and (max-width: 768px) {
+  .Polaris-Layout__Section--twoThirds {
+    width: 100% !important;
+  }
+  
+  .Polaris-Layout__Section--oneThird {
+    width: 100% !important;
+  }
+  
+  .Polaris-InlineStack--wrap {
+    flex-wrap: wrap !important;
+    gap: 1rem !important;
+  }
+  
+  .Polaris-Button {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+/* Desktop için iki sütun layout */
+@media (min-width: 769px) {
+  .Polaris-Layout {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 2rem;
+  }
+  
+  .Polaris-Layout__Section:first-child {
+    flex: 2;
+  }
+  
+  .Polaris-Layout__Section:last-child {
+    flex: 1;
+  }
+}
+
+/* Genel mobil iyileştirmeler */
+@media (max-width: 768px) {
+  /* Tüm gap'leri küçült */
+  .Polaris-BlockStack--gap400 {
+    gap: 1rem !important;
+  }
+  
+  .Polaris-BlockStack--gap500 {
+    gap: 1.25rem !important;
+  }
+  
+  .Polaris-BlockStack--gap300 {
+    gap: 0.75rem !important;
+  }
+  
+  /* InlineStack gap'lerini küçült */
+  .Polaris-InlineStack--gap800 {
+    gap: 1rem !important;
+  }
+  
+  .Polaris-InlineStack--gap400 {
+    gap: 0.75rem !important;
+  }
+  
+  .Polaris-InlineStack--gap300 {
+    gap: 0.5rem !important;
+  }
+  
+  .Polaris-InlineStack--gap200 {
+    gap: 0.5rem !important;
+  }
+}

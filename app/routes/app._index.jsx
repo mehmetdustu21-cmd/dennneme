@@ -27,13 +27,17 @@ import { authenticate } from "../shopify.server";
 export const loader = async ({ request }) => {
   try {
     const { admin, session } = await authenticate.admin(request);
+    const { getShopWithStats } = await import("../models/shop.server");
 
-    let themeExtensionActive = false; // Varsayılan olarak kapalı (kullanıcı kuracak)
+    // Get real shop data and statistics
+    const shopData = await getShopWithStats(session.shop);
+
+    let themeExtensionActive = false;
     let productPageUrl = "/products/example";
     let themeId = "";
     
     try {
-      // Ana tema ve ürün bilgisini al
+      // Get theme and product info
       const response = await admin.graphql(
         `#graphql
         query {
@@ -65,13 +69,11 @@ export const loader = async ({ request }) => {
 
       const result = await response.json();
       
-      // Theme ID'yi al
       if (result.data?.themes?.edges[0]) {
         const fullThemeId = result.data.themes.edges[0].node.id;
         themeId = fullThemeId.split('/').pop();
       }
 
-      // İlk ürünü al
       if (result.data?.products?.edges[0]) {
         const product = result.data.products.edges[0].node;
         const variantId = product.variants.edges[0]?.node.id.split('/').pop();
@@ -79,20 +81,20 @@ export const loader = async ({ request }) => {
       }
     } catch (graphqlError) {
       console.error("GraphQL query failed:", graphqlError);
-      // GraphQL hatası olsa bile devam et
     }
 
     return {
       shop: session.shop,
+      shopData,
       themeExtensionActive,
       productPageUrl,
       themeId,
     };
   } catch (error) {
     console.error("Loader error:", error);
-    // En kötü ihtimal bile çalışsın
     return {
       shop: "unknown",
+      shopData: null,
       themeExtensionActive: true,
       productPageUrl: "/products/example",
       themeId: "",
@@ -102,7 +104,7 @@ export const loader = async ({ request }) => {
 
 export default function Index() {
   const navigate = useNavigate();
-  const { shop, themeExtensionActive, productPageUrl, themeId } = useLoaderData();
+  const { shop, shopData, themeExtensionActive, productPageUrl, themeId } = useLoaderData();
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false);
   const [selectedCredits, setSelectedCredits] = useState(50);
 
@@ -120,13 +122,21 @@ export default function Index() {
     window.open(editorUrl, '_blank');
   }, [shopName, extensionId]);
 
-  // Gerçek kullanım verisi (şimdilik simüle)
-  const usageData = {
-    totalGenerations: 15,
-    cacheHitRate: 40.0,
-    cached: 6,
-    uncached: 9,
-    creditsUsed: 16,
+  // Real usage data from database
+  const usageData = shopData ? {
+    totalGenerations: shopData.stats.totalGenerations,
+    cacheHitRate: shopData.stats.cacheHitRate,
+    cached: Math.round(shopData.stats.totalGenerations * shopData.stats.cacheHitRate / 100),
+    uncached: shopData.stats.totalGenerations - Math.round(shopData.stats.totalGenerations * shopData.stats.cacheHitRate / 100),
+    creditsUsed: shopData.stats.creditsUsed,
+    creditsTotal: shopData.stats.creditsRemaining + shopData.stats.creditsUsed,
+    currentPlan: shopData.shop.plan === "free" ? "Free Plan" : shopData.shop.plan.charAt(0).toUpperCase() + shopData.shop.plan.slice(1) + " Plan"
+  } : {
+    totalGenerations: 0,
+    cacheHitRate: 0,
+    cached: 0,
+    uncached: 0,
+    creditsUsed: 0,
     creditsTotal: 25,
     currentPlan: "Free Plan"
   };
@@ -161,300 +171,190 @@ export default function Index() {
     <Page>
       <TitleBar title="Dashboard" />
 
-      <BlockStack gap="500">
-        <Layout>
-          {/* Sol Kolon - Ana İçerik */}
-          <Layout.Section>
-            <BlockStack gap="400">
-              {/* Abonelik Durumu */}
-              <Card>
-                <BlockStack gap="400">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Text variant="headingMd" as="h2">
-                      Subscription status
-                    </Text>
-                    <Badge tone="success">{usageData.currentPlan}</Badge>
-                  </InlineStack>
-
-                  <Text variant="bodySm" tone="subdued">
-                    Your current plan and usage
-                  </Text>
-
-                  <InlineStack gap="800" blockAlign="start">
-                    <BlockStack gap="200">
-                      <Text variant="bodySm" tone="subdued">
-                        Credits remaining
-                      </Text>
-                      <Text variant="headingLg" as="h3">
-                        {creditsRemaining} / {usageData.creditsTotal}
-                      </Text>
-                    </BlockStack>
-
-                    <BlockStack gap="200">
-                      <Text variant="bodySm" tone="subdued">
-                        Billing cycle
-                      </Text>
-                      <Text variant="bodyMd">
-                        Ends Nov 16, 2025
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-
-                  <ProgressBar
-                    progress={creditsPercentage}
-                    tone={creditsPercentage > 80 ? "critical" : creditsPercentage > 60 ? "caution" : "primary"}
-                  />
-
-                  {isLowCredits && (
-                    <Banner tone="warning">
-                      <InlineStack gap="200" blockAlign="center">
-                        <Icon source={AlertTriangleIcon} tone="base" />
-                        <Text variant="bodySm">
-                          You're running low on credits! Buy more or upgrade your plan.
-                        </Text>
-                      </InlineStack>
-                    </Banner>
-                  )}
-
-                  <Text variant="bodySm" tone="subdued">
-                    Free plan includes "Powered by" branding.
-                  </Text>
-
-                  <InlineStack gap="300">
-                    <Button
-                      variant="primary"
-                      onClick={() => navigate("/app/plans")}
-                    >
-                      View plans
-                    </Button>
-                    <Button onClick={() => setShowBuyCreditsModal(true)}>
-                      Buy More Credits
-                    </Button>
-                  </InlineStack>
-                </BlockStack>
-              </Card>
-
-              {/* Kullanım İstatistikleri */}
-              <Card>
-                <BlockStack gap="400">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Text variant="headingMd" as="h2">
-                      Usage Analytics (Last 7 Days)
-                    </Text>
-                    <Button variant="plain" onClick={() => navigate("/app/analytics")}>
-                      View Details
-                    </Button>
-                  </InlineStack>
-
-                  <InlineStack gap="800" blockAlign="start">
-                    <BlockStack gap="100">
-                      <Text variant="bodySm" tone="subdued">
-                        Total Generations
-                      </Text>
-                      <Text variant="headingLg" as="h3">
-                        {usageData.totalGenerations}
-                      </Text>
-                    </BlockStack>
-
-                    <BlockStack gap="100">
-                      <Text variant="bodySm" tone="subdued">
-                        Cache Hit Rate
-                      </Text>
-                      <Text variant="headingLg" as="h3">
-                        {usageData.cacheHitRate}%
-                      </Text>
-                    </BlockStack>
-
-                    <BlockStack gap="100">
-                      <Text variant="bodySm" tone="subdued">
-                        Cached
-                      </Text>
-                      <Text variant="headingLg" as="h3">
-                        {usageData.cached}
-                      </Text>
-                    </BlockStack>
-
-                    <BlockStack gap="100">
-                      <Text variant="bodySm" tone="subdued">
-                        Uncached
-                      </Text>
-                      <Text variant="headingLg" as="h3">
-                        {usageData.uncached}
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-
-                  <div style={{
-                    height: '200px',
-                    background: 'linear-gradient(180deg, #E3F2FD 0%, #BBDEFB 100%)',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <Icon source={ChartVerticalIcon} tone="base" />
-                    <Text variant="bodyMd" tone="subdued">
-                      Chart placeholder
-                    </Text>
-                  </div>
-                </BlockStack>
-              </Card>
+      <BlockStack gap="400">
+        {/* 1. Ürün Seçme Kartı */}
+        <Card>
+          <BlockStack gap="400">
+            <BlockStack gap="200" blockAlign="center">
+              <div style={{
+                width: '48px',
+                height: '48px',
+                background: '#3B82F6',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Icon source={ImageIcon} tone="base" />
+              </div>
+              <Text variant="headingLg" as="h2">
+                Ürün Seçin
+              </Text>
+              <Text variant="bodyMd" tone="subdued" alignment="center">
+                Virtual try-on için bir ürün seçin
+              </Text>
             </BlockStack>
-          </Layout.Section>
 
-          {/* Sağ Kolon - Ayarlar & Konfigürasyon */}
-          <Layout.Section variant="oneThird">
-            <BlockStack gap="400">
-              {/* Theme Extension - OTOMATİK KURULUM */}
-              <Card>
-                <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <InlineStack gap="200" blockAlign="center">
-                      <div style={{
-                        width: '32px',
-                        height: '32px',
-                        background: themeExtensionActive ? '#4ADE80' : '#3B82F6',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <Icon source={themeExtensionActive ? CheckIcon : SettingsIcon} tone="base" />
-                      </div>
-                      <Text variant="headingSm" as="h3">
-                        Theme extension
-                      </Text>
-                    </InlineStack>
-                    <Badge tone={themeExtensionActive ? "success" : "info"}>
-                      {themeExtensionActive ? "Active" : "Ready to Setup"}
-                    </Badge>
-                  </InlineStack>
+            <Button 
+              variant="primary" 
+              size="large"
+              onClick={() => navigate("/app/generate")}
+            >
+              Ürün Seç
+            </Button>
+          </BlockStack>
+        </Card>
 
-                  <Text variant="bodySm" tone="subdued">
-                    {themeExtensionActive 
-                      ? "The Virtual Try-On widget is active on your product pages."
-                      : "Click below to automatically add the Virtual Try-On widget to your theme."
-                    }
-                  </Text>
+        {/* 2. Model Seçme Kartı */}
+        <Card>
+          <BlockStack gap="400">
+            <BlockStack gap="200" blockAlign="center">
+              <div style={{
+                width: '48px',
+                height: '48px',
+                background: '#10B981',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Icon source={ImageIcon} tone="base" />
+              </div>
+              <Text variant="headingLg" as="h2">
+                Model Seçin
+              </Text>
+              <Text variant="bodyMd" tone="subdued" alignment="center">
+                Hangi model üzerinde deneme yapmak istiyorsunuz?
+              </Text>
+            </BlockStack>
 
-                  {/* ✅ OTOMATİK KURULUM BUTONU */}
-                  <Button 
-                    onClick={handleSetupWidget}
-                    variant="primary"
-                  >
-                    {themeExtensionActive ? "Customize Widget" : "Setup App"}
-                  </Button>
-                </BlockStack>
-              </Card>
+            <Button 
+              variant="secondary" 
+              size="large"
+              onClick={() => navigate("/app/models")}
+            >
+              Model Yönet
+            </Button>
+          </BlockStack>
+        </Card>
 
-              {/* Models */}
-              <Card>
-                <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <InlineStack gap="200" blockAlign="center">
-                      <div style={{
-                        width: '32px',
-                        height: '32px',
-                        background: '#E0E7FF',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <Icon source={ImageIcon} tone="base" />
-                      </div>
-                      <Text variant="headingSm" as="h3">
-                        Models
-                      </Text>
-                    </InlineStack>
-                    <Badge tone="info">10 active</Badge>
-                  </InlineStack>
+        {/* 3. Sonuç Kartı */}
+        <Card>
+          <BlockStack gap="400">
+            <BlockStack gap="200" blockAlign="center">
+              <div style={{
+                width: '48px',
+                height: '48px',
+                background: '#8B5CF6',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Icon source={ImageIcon} tone="base" />
+              </div>
+              <Text variant="headingLg" as="h2">
+                Sonuçları Görün
+              </Text>
+              <Text variant="bodyMd" tone="subdued" alignment="center">
+                Virtual try-on sonuçlarınızı burada görebilirsiniz
+              </Text>
+            </BlockStack>
 
-                  <Text variant="bodySm" tone="subdued">
-                    Manage default and custom model images.
-                  </Text>
+            <Button 
+              variant="secondary" 
+              size="large"
+              onClick={() => navigate("/app/generate")}
+            >
+              Sonuçları Gör
+            </Button>
+          </BlockStack>
+        </Card>
 
-                  <Button onClick={() => navigate("/app/models")}>
-                    Manage
-                  </Button>
-                </BlockStack>
-              </Card>
+        {/* Alt Bilgi Kartları */}
+        <BlockStack gap="300">
+          {/* Abonelik Durumu */}
+          <Card>
+            <BlockStack gap="300">
+              <BlockStack gap="200" blockAlign="center">
+                <Text variant="headingMd" as="h3">
+                  Abonelik Durumu
+                </Text>
+                <Badge tone="success">{usageData.currentPlan}</Badge>
+              </BlockStack>
 
-              {/* Settings */}
-              <Card>
-                <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <InlineStack gap="200" blockAlign="center">
-                      <div style={{
-                        width: '32px',
-                        height: '32px',
-                        background: '#FEF3C7',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <Icon source={SettingsIcon} tone="base" />
-                      </div>
-                      <Text variant="headingSm" as="h3">
-                        Settings
-                      </Text>
-                    </InlineStack>
-                    <Badge tone="success">Configured</Badge>
-                  </InlineStack>
+              <BlockStack gap="200">
+                <Text variant="bodySm" tone="subdued">
+                  Kalan Krediler
+                </Text>
+                <Text variant="headingLg" as="h3">
+                  {creditsRemaining} / {usageData.creditsTotal}
+                </Text>
+              </BlockStack>
 
-                  <Text variant="bodySm" tone="subdued">
-                    Manage caching and app preferences.
-                  </Text>
+              <ProgressBar
+                progress={creditsPercentage}
+                tone={creditsPercentage > 80 ? "critical" : creditsPercentage > 60 ? "caution" : "primary"}
+              />
 
-                  <Button onClick={() => navigate("/app/settings")}>
-                    Manage
-                  </Button>
-                </BlockStack>
-              </Card>
-
-              {/* Quick Stats */}
-              <Card>
-                <BlockStack gap="300">
-                  <Text variant="headingSm" as="h3">
-                    ⚡ Quick Stats
-                  </Text>
-
+              {isLowCredits && (
+                <Banner tone="warning">
                   <BlockStack gap="200">
-                    <InlineStack align="space-between">
-                      <Text variant="bodySm" tone="subdued">
-                        App Version
-                      </Text>
-                      <Text variant="bodySm" fontWeight="semibold">
-                        v1.0.0
-                      </Text>
-                    </InlineStack>
-
-                    <InlineStack align="space-between">
-                      <Text variant="bodySm" tone="subdued">
-                        Status
-                      </Text>
-                      <Badge tone="success">Active</Badge>
-                    </InlineStack>
-
-                    <InlineStack align="space-between">
-                      <Text variant="bodySm" tone="subdued">
-                        Last Updated
-                      </Text>
-                      <Text variant="bodySm">
-                        {new Date().toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </Text>
-                    </InlineStack>
+                    <Icon source={AlertTriangleIcon} tone="base" />
+                    <Text variant="bodySm">
+                      Kredileriniz azalıyor! Daha fazla kredi satın alın.
+                    </Text>
                   </BlockStack>
-                </BlockStack>
-              </Card>
+                </Banner>
+              )}
+
+              <BlockStack gap="200">
+                <Button
+                  variant="primary"
+                  onClick={() => navigate("/app/plans")}
+                >
+                  Planları Gör
+                </Button>
+                <Button onClick={() => setShowBuyCreditsModal(true)}>
+                  Kredi Satın Al
+                </Button>
+              </BlockStack>
             </BlockStack>
-          </Layout.Section>
-        </Layout>
+          </Card>
+
+          {/* Hızlı İstatistikler */}
+          <Card>
+            <BlockStack gap="300">
+              <Text variant="headingMd" as="h3" alignment="center">
+                📊 Son 7 Gün
+              </Text>
+              
+              <BlockStack gap="200">
+                <BlockStack gap="100">
+                  <Text variant="bodySm" tone="subdued">
+                    Toplam Üretim
+                  </Text>
+                  <Text variant="headingLg" as="h3">
+                    {usageData.totalGenerations}
+                  </Text>
+                </BlockStack>
+
+                <BlockStack gap="100">
+                  <Text variant="bodySm" tone="subdued">
+                    Cache Hit Rate
+                  </Text>
+                  <Text variant="headingLg" as="h3">
+                    {usageData.cacheHitRate}%
+                  </Text>
+                </BlockStack>
+              </BlockStack>
+
+              <Button variant="plain" onClick={() => navigate("/app/analytics")}>
+                Detayları Gör
+              </Button>
+            </BlockStack>
+          </Card>
+        </BlockStack>
       </BlockStack>
 
       {/* Buy Credits Modal */}

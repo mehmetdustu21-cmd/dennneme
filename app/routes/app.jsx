@@ -3,6 +3,7 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider as ShopifyAppProvider } from "@shopify/shopify-app-react-router/react";
 import { AppProvider as PolarisAppProvider } from "@shopify/polaris";
 import "@shopify/polaris/build/esm/styles.css";
+import "./styles/responsive.css";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
@@ -17,8 +18,13 @@ export default function App() {
     <ShopifyAppProvider embedded apiKey={apiKey}>
       <PolarisAppProvider i18n={{}}>
         <s-app-nav>
-          <s-link href="/app">Home</s-link>
-          <s-link href="/app/additional">Additional page</s-link>
+          <s-link href="/app">🏠 Dashboard</s-link>
+          <s-link href="/app/generate">✨ Generate Try-On</s-link>
+          <s-link href="/app/models">👤 Models</s-link>
+          <s-link href="/app/analytics">📊 Analytics</s-link>
+          <s-link href="/app/plans">💳 Plans & Billing</s-link>
+          <s-link href="/app/theme">🎨 Theme Settings</s-link>
+          <s-link href="/app/settings">⚙️ Settings</s-link>
         </s-app-nav>
         <Outlet />
       </PolarisAppProvider>
