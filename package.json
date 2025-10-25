@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "react-router build",
+    "build:production": "npm run setup && npm run build",
     "dev": "shopify app dev",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
